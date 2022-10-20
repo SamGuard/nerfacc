@@ -1,5 +1,5 @@
 
-FROM nvidia/cuda:11.7.1-base-ubuntu20.04
+FROM nvidia/cuda:11.7.1-devel-ubuntu20.04
 
 # Remove any third-party apt sources to avoid issues with expiring keys.
 RUN rm -f /etc/apt/sources.list.d/*.list
@@ -40,9 +40,9 @@ COPY data /home/ruilongli/data
 RUN cd /home/ruilongli/data && unzip *
 
 RUN conda create -n nerf python=3.9
-#SHELL ["conda", "run", "-n", "nerf", "/bin/bash", "-c"]
 
-RUN git pull
+SHELL ["conda", "run", "-n", "nerf", "/bin/bash", "-c"]
+
 CMD [ "conda", "run", \
     "--no-capture-output", "-n", "nerf", \
     "yes | /bin/bash setup.sh"]
