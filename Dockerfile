@@ -34,14 +34,12 @@ RUN mkdir /home/ruilongli/
 COPY data /home/ruilongli/data
 RUN cd /home/ruilongli/data && unzip *
 
-RUN git pull
-
 RUN conda create -n nerf python=3.9
 #SHELL ["conda", "run", "-n", "nerf", "/bin/bash", "-c"]
 
 CMD [ "conda", "run", \
     "--no-capture-output", "-n", "nerf", \
-    "bash setup.sh"]
+    "git pull; bash setup.sh"]
 
     #"python", "examples/train_mlp_nerf.py", \
     #"--train_split" ,"train", "--scene", "lego"]
