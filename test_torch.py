@@ -7,6 +7,6 @@ print(torch.version.cuda)
 
 try:
   import numpy
-  torch.zeros(1).cuda()
+  print(torch.zeros(1).cuda())
 except:
   print("No numpy installed")
