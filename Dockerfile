@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y \
     git \
     wget \
     unzip \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+
 
 
 WORKDIR /tmp/
@@ -21,6 +24,8 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 ENV TF_FORCE_GPU_ALLOW_GROWTH=true
+ENV PATH=/usr/local/cuda-11.4/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH
 
 # Create a working directory
 WORKDIR /
@@ -37,9 +42,10 @@ RUN cd /home/ruilongli/data && unzip *
 RUN conda create -n nerf python=3.9
 #SHELL ["conda", "run", "-n", "nerf", "/bin/bash", "-c"]
 
+RUN git pull
 CMD [ "conda", "run", \
     "--no-capture-output", "-n", "nerf", \
-    "git pull; bash setup.sh"]
+    "yes | /bin/bash setup.sh"]
 
     #"python", "examples/train_mlp_nerf.py", \
     #"--train_split" ,"train", "--scene", "lego"]
