@@ -216,6 +216,8 @@ if __name__ == "__main__":
                     f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                     f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                 )
+                torch.save(radiance_field, "./vanilla_nerf_step"+str(step)+".pt")
+                print("Saved network")
 
             if step >= 0 and step % max_steps == 0 and step > 0:
                 # evaluation
@@ -259,7 +261,6 @@ if __name__ == "__main__":
                 psnr_avg = sum(psnrs) / len(psnrs)
                 print(f"evaluation: psnr_avg={psnr_avg}")
                 train_dataset.training = True
-                torch.save(radiance_field, "./trained_vanilla_nerf.pt")
 
             if step == max_steps:
                 print("training stops")
