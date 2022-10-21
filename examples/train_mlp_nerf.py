@@ -259,6 +259,7 @@ if __name__ == "__main__":
                 psnr_avg = sum(psnrs) / len(psnrs)
                 print(f"evaluation: psnr_avg={psnr_avg}")
                 train_dataset.training = True
+                torch.save(radiance_field, "./trained_vanilla_nerf.pt")
 
             if step == max_steps:
                 print("training stops")
