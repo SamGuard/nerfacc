@@ -4,7 +4,6 @@ Copyright (c) 2022 Ruilong Li, UC Berkeley.
 
 import argparse
 import math
-import os
 import time
 
 import imageio
@@ -216,7 +215,7 @@ if __name__ == "__main__":
                     f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                     f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                 )
-                torch.save(radiance_field, "./vanilla_nerf_step"+str(step)+".pt")
+                torch.save(radiance_field.state_dict(), "./vanilla_nerf_step"+str(step)+".pt")
                 print("Saved network")
 
             if step >= 0 and step % max_steps == 0 and step > 0:
