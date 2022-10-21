@@ -1,3 +1,4 @@
+#!/bin/bash
 git pull
 nvidia-smi
 conda install pytorch==1.12.0 cudatoolkit=11.3 -c pytorch -c conda-forge

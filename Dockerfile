@@ -45,7 +45,7 @@ SHELL ["conda", "run", "-n", "nerf", "/bin/bash", "-c"]
 
 CMD [ "conda", "run", \
     "--no-capture-output", "-n", "nerf", \
-    "yes | /bin/bash setup.sh"]
+    "/bin/bash -c './setup.sh'"]
 
     #"python", "examples/train_mlp_nerf.py", \
     #"--train_split" ,"train", "--scene", "lego"]
