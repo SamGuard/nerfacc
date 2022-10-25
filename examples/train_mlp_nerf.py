@@ -277,11 +277,13 @@ if __name__ == "__main__":
 
     else:
         # Load model
+        radiance_field = VanillaNeRFRadianceField()
         radiance_field.load_state_dict(
             torch.load(
                 os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
             )
         )
+        radiance_field.to(device)
         radiance_field.eval()
         for i in range(len(test_dataset)):
             data = test_dataset[i]
