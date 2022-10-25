@@ -71,10 +71,17 @@ if __name__ == "__main__":
         help="Bool, whether to train or not, just render",
         type=lambda x: x.lower() == "true",
     )
+    parser.add_argument(
+        "--samples",
+        default="1024",
+        help="Number of samples",
+        type=int
+    )
     parser.add_argument("--cone_angle", type=float, default=0.0)
     args = parser.parse_args()
 
-    render_n_samples = 1024
+
+    render_n_samples = args.samples
 
     # setup the scene bounding box.
     if args.unbounded:
