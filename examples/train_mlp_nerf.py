@@ -283,8 +283,8 @@ if __name__ == "__main__":
             )
         )
         radiance_field.eval()
-        for i in range(len(train_dataset)):
-            data = train_dataset[i]
+        for i in range(len(test_dataset)):
+            data = test_dataset[i]
             rays = data["rays"]
             render_bkgd = data["color_bkgd"]
             rgb, acc, depth, n_rendering_samples = render_image(
