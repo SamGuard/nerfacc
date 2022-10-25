@@ -95,7 +95,7 @@ if __name__ == "__main__":
         ).item()
 
     # setup the radiance field we want to train.
-    max_steps = 5000
+    max_steps = 50000
     grad_scaler = torch.cuda.amp.GradScaler(1)
     radiance_field = VanillaNeRFRadianceField().to(device)
     optimizer = torch.optim.Adam(radiance_field.parameters(), lr=5e-4)
@@ -265,7 +265,7 @@ if __name__ == "__main__":
                                 os.path.join(".", "render_out",f"rgb_{i}.png"),
                                 (rgb.cpu().numpy() * 255).astype(np.uint8),
                             )
-                            #break
+                            break
                     psnr_avg = sum(psnrs) / len(psnrs)
                     print(f"evaluation: psnr_avg={psnr_avg}")
                     train_dataset.training = True
