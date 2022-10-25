@@ -276,6 +276,13 @@ if __name__ == "__main__":
                 step += 1
 
     else:
+        # Load model
+        radiance_field.load_state_dict(
+            torch.load(
+                os.path.join(".", "network_out", "vanilla_nerf_step50000"), device
+            )
+        )
+        radiance_field.eval()
         for i in range(len(train_dataset)):
             data = train_dataset[i]
             rays = data["rays"]
