@@ -232,6 +232,7 @@ if __name__ == "__main__":
 
                     psnrs = []
                     with torch.no_grad():
+                        print("Writing images to file...")
                         for i in tqdm.tqdm(range(len(test_dataset))):
                             data = test_dataset[i]
                             render_bkgd = data["color_bkgd"]
@@ -260,15 +261,15 @@ if __name__ == "__main__":
                             #    "acc_binary_test.png",
                             #    ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
                             #)
-                            print("Writing image to file...")
                             imageio.imwrite(
                                 os.path.join(".", "render_out",f"rgb_{i}.png"),
                                 (rgb.cpu().numpy() * 255).astype(np.uint8),
                             )
-                            break
+                            
                     psnr_avg = sum(psnrs) / len(psnrs)
                     print(f"evaluation: psnr_avg={psnr_avg}")
                     train_dataset.training = True
+                    break
 
                 if step == max_steps:
                     print("training stops")
@@ -278,38 +279,39 @@ if __name__ == "__main__":
 
     else:
         # Load model
-        radiance_field = VanillaNeRFRadianceField()
-        radiance_field.load_state_dict(
-            torch.load(
-                os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
+        with torch.no_grad():
+            radiance_field = VanillaNeRFRadianceField()
+            radiance_field.load_state_dict(
+                torch.load(
+                    os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
+                )
             )
-        )
-        radiance_field.to(device)
-        radiance_field.eval()
-        for i in range(len(test_dataset)):
-            data = test_dataset[i]
-            render_bkgd = data["color_bkgd"]
-            rays = data["rays"]
-            pixels = data["pixels"]
+            radiance_field.to(device)
+            radiance_field.eval()
+            for i in range(len(test_dataset)):
+                data = test_dataset[i]
+                render_bkgd = data["color_bkgd"]
+                rays = data["rays"]
+                pixels = data["pixels"]
 
-            # rendering
-            rgb, acc, depth, _ = render_image(
-                radiance_field,
-                occupancy_grid,
-                rays,
-                scene_aabb,
-                # rendering options
-                near_plane=None,
-                far_plane=None,
-                render_step_size=render_step_size,
-                render_bkgd=render_bkgd,
-                cone_angle=args.cone_angle,
-                # test options
-                test_chunk_size=args.test_chunk_size,
-            )
-            imageio.imwrite(
-                os.path.join(".", "render_out", f"rgb_{i}.png"),
-                (rgb.cpu().numpy() * 255).astype(np.uint8),
-            )
-            if(i == 0):
-                print((rgb.cpu().numpy()))
+                # rendering
+                rgb, acc, depth, _ = render_image(
+                    radiance_field,
+                    occupancy_grid,
+                    rays,
+                    scene_aabb,
+                    # rendering options
+                    near_plane=None,
+                    far_plane=None,
+                    render_step_size=render_step_size,
+                    render_bkgd=render_bkgd,
+                    cone_angle=args.cone_angle,
+                    # test options
+                    test_chunk_size=args.test_chunk_size,
+                )
+                imageio.imwrite(
+                    os.path.join(".", "render_out", f"rgb_{i}.png"),
+                    (rgb.cpu().numpy() * 255).astype(np.uint8),
+                )
+                if(i == 0):
+                    print((rgb.cpu().numpy()))
