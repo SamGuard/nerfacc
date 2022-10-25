@@ -285,19 +285,24 @@ if __name__ == "__main__":
         radiance_field.eval()
         for i in range(len(test_dataset)):
             data = test_dataset[i]
-            rays = data["rays"]
             render_bkgd = data["color_bkgd"]
-            rgb, acc, depth, n_rendering_samples = render_image(
+            rays = data["rays"]
+            pixels = data["pixels"]
+
+            # rendering
+            rgb, acc, depth, _ = render_image(
                 radiance_field,
                 occupancy_grid,
                 rays,
                 scene_aabb,
                 # rendering options
-                near_plane=near_plane,
-                far_plane=far_plane,
+                near_plane=None,
+                far_plane=None,
                 render_step_size=render_step_size,
                 render_bkgd=render_bkgd,
                 cone_angle=args.cone_angle,
+                # test options
+                test_chunk_size=args.test_chunk_size,
             )
             imageio.imwrite(
                 os.path.join(".", "render_out", f"rgb_{i}.png"),
