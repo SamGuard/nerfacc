@@ -261,7 +261,7 @@ if __name__ == "__main__":
                             #    ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
                             #)
                             imageio.imwrite(
-                                f"rgb_{i}.png",
+                                os.path.join(".", "render_out",f"rgb_{i}.png"),
                                 (rgb.cpu().numpy() * 255).astype(np.uint8),
                             )
                             #break
