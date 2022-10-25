@@ -279,7 +279,7 @@ if __name__ == "__main__":
         # Load model
         radiance_field.load_state_dict(
             torch.load(
-                os.path.join(".", "network_out", "vanilla_nerf_step50000"), device
+                os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
             )
         )
         radiance_field.eval()
