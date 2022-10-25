@@ -304,4 +304,4 @@ if __name__ == "__main__":
                 (rgb.cpu().numpy() * 255).astype(np.uint8),
             )
             if(i == 0):
-                print((rgb.cpu().numpy() * 255).astype(np.uint8))
+                print((rgb.cpu().numpy()))
