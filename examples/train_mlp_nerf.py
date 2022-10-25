@@ -256,15 +256,15 @@ if __name__ == "__main__":
                             mse = F.mse_loss(rgb, pixels)
                             psnr = -10.0 * torch.log(mse) / np.log(10.0)
                             psnrs.append(psnr.item())
-                            # imageio.imwrite(
-                            #     "acc_binary_test.png",
-                            #     ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
-                            # )
-                            # imageio.imwrite(
-                            #     "rgb_test.png",
-                            #     (rgb.cpu().numpy() * 255).astype(np.uint8),
-                            # )
-                            # break
+                            #imageio.imwrite(
+                            #    "acc_binary_test.png",
+                            #    ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
+                            #)
+                            imageio.imwrite(
+                                f"rgb_{i}.png",
+                                (rgb.cpu().numpy() * 255).astype(np.uint8),
+                            )
+                            #break
                     psnr_avg = sum(psnrs) / len(psnrs)
                     print(f"evaluation: psnr_avg={psnr_avg}")
                     train_dataset.training = True
