@@ -290,10 +290,12 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
+        '''
         occupancy_grid._update(
             step=step,
             occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
         )
+        '''
         for i in range(len(test_dataset)):
             data = test_dataset[i]
             render_bkgd = data["color_bkgd"]
