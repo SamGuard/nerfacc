@@ -71,10 +71,17 @@ if __name__ == "__main__":
         help="Bool, whether to train or not, just render",
         type=lambda x: x.lower() == "true",
     )
+    parser.add_argument(
+        "--samples",
+        default="1024",
+        help="Number of samples",
+        type=int
+    )
     parser.add_argument("--cone_angle", type=float, default=0.0)
     args = parser.parse_args()
 
-    render_n_samples = 1024
+
+    render_n_samples = args.samples
 
     # setup the scene bounding box.
     if args.unbounded:
@@ -232,6 +239,7 @@ if __name__ == "__main__":
 
                     psnrs = []
                     with torch.no_grad():
+                        print("Writing images to file...")
                         for i in tqdm.tqdm(range(len(test_dataset))):
                             data = test_dataset[i]
                             render_bkgd = data["color_bkgd"]
@@ -265,10 +273,11 @@ if __name__ == "__main__":
                                 os.path.join(".", "render_out", f"rgb_{i}.png"),
                                 (rgb.cpu().numpy() * 255).astype(np.uint8),
                             )
-                            break
+                            
                     psnr_avg = sum(psnrs) / len(psnrs)
                     print(f"evaluation: psnr_avg={psnr_avg}")
                     train_dataset.training = True
+                    break
 
                 if step == max_steps:
                     print("training stops")
@@ -313,9 +322,15 @@ if __name__ == "__main__":
                 # test options
                 test_chunk_size=args.test_chunk_size,
             )
-            imageio.imwrite(
-                os.path.join(".", "render_out", f"rgb_{i}.png"),
-                (rgb.cpu().numpy() * 255).astype(np.uint8),
+            radiance_field.to(device)
+            radiance_field.eval()
+
+            # update occupancy grid
+            occupancy_grid.every_n_step(
+                step=max_steps,
+                occ_eval_fn=lambda x: radiance_field.query_opacity(
+                    x, render_step_size
+                ),
             )
             if i == 0:
                 print((rgb.cpu().numpy()))
