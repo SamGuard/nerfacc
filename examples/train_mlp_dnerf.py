@@ -198,7 +198,7 @@ if __name__ == "__main__":
                     torch.save(
                         radiance_field.state_dict(),
                         os.path.join(
-                            ".", "network_out", "dnerf_nerf_step", str(step) + ".pt"
+                            ".", "network_out", "dnerf_nerf_step" + str(step) + ".pt"
                         ),
                     )
 
