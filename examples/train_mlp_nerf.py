@@ -256,13 +256,13 @@ if __name__ == "__main__":
                             mse = F.mse_loss(rgb, pixels)
                             psnr = -10.0 * torch.log(mse) / np.log(10.0)
                             psnrs.append(psnr.item())
-                            #imageio.imwrite(
+                            # imageio.imwrite(
                             #    "acc_binary_test.png",
                             #    ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
-                            #)
+                            # )
                             print("Writing image to file...")
                             imageio.imwrite(
-                                os.path.join(".", "render_out",f"rgb_{i}.png"),
+                                os.path.join(".", "render_out", f"rgb_{i}.png"),
                                 (rgb.cpu().numpy() * 255).astype(np.uint8),
                             )
                             break
@@ -286,11 +286,17 @@ if __name__ == "__main__":
         )
         radiance_field.to(device)
         radiance_field.eval()
+        step = 0
         for i in range(len(test_dataset)):
             data = test_dataset[i]
             render_bkgd = data["color_bkgd"]
             rays = data["rays"]
             pixels = data["pixels"]
+
+            occupancy_grid._update(
+                step=step,
+                occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
+            )
 
             # rendering
             rgb, acc, depth, _ = render_image(
@@ -311,5 +317,5 @@ if __name__ == "__main__":
                 os.path.join(".", "render_out", f"rgb_{i}.png"),
                 (rgb.cpu().numpy() * 255).astype(np.uint8),
             )
-            if(i == 0):
+            if i == 0:
                 print((rgb.cpu().numpy()))
