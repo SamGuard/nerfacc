@@ -59,6 +59,12 @@ if __name__ == "__main__":
         type=int,
         default=8192,
     )
+    parser.add_argument(
+        "--just_render",
+        default="false",
+        help="Bool, whether to train or not, just render",
+        type=lambda x: x.lower() == "true",
+    )
     parser.add_argument("--cone_angle", type=float, default=0.0)
     args = parser.parse_args()
 
@@ -70,9 +76,7 @@ if __name__ == "__main__":
     near_plane = None
     far_plane = None
     render_step_size = (
-        (scene_aabb[3:] - scene_aabb[:3]).max()
-        * math.sqrt(3)
-        / render_n_samples
+        (scene_aabb[3:] - scene_aabb[:3]).max() * math.sqrt(3) / render_n_samples
     ).item()
 
     # setup the radiance field we want to train.
@@ -126,120 +130,175 @@ if __name__ == "__main__":
     # training
     step = 0
     tic = time.time()
-    for epoch in range(10000000):
-        for i in range(len(train_dataset)):
-            radiance_field.train()
-            data = train_dataset[i]
+    if not args.just_render:
+        for epoch in range(10000000):
+            for i in range(len(train_dataset)):
+                radiance_field.train()
+                data = train_dataset[i]
 
-            render_bkgd = data["color_bkgd"]
-            rays = data["rays"]
-            pixels = data["pixels"]
-            timestamps = data["timestamps"]
+                render_bkgd = data["color_bkgd"]
+                rays = data["rays"]
+                pixels = data["pixels"]
+                timestamps = data["timestamps"]
 
-            # update occupancy grid
-            occupancy_grid.every_n_step(
-                step=step,
-                occ_eval_fn=lambda x: radiance_field.query_opacity(
-                    x, timestamps, render_step_size
-                ),
-            )
-
-            # render
-            rgb, acc, depth, n_rendering_samples = render_image(
-                radiance_field,
-                occupancy_grid,
-                rays,
-                scene_aabb,
-                # rendering options
-                near_plane=near_plane,
-                far_plane=far_plane,
-                render_step_size=render_step_size,
-                render_bkgd=render_bkgd,
-                cone_angle=args.cone_angle,
-                alpha_thre=0.01 if step > 1000 else 0.00,
-                # dnerf options
-                timestamps=timestamps,
-            )
-            if n_rendering_samples == 0:
-                continue
-
-            # dynamic batch size for rays to keep sample batch size constant.
-            num_rays = len(pixels)
-            num_rays = int(
-                num_rays
-                * (target_sample_batch_size / float(n_rendering_samples))
-            )
-            train_dataset.update_num_rays(num_rays)
-            alive_ray_mask = acc.squeeze(-1) > 0
-
-            # compute loss
-            loss = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
-
-            optimizer.zero_grad()
-            # do not unscale it because we are using Adam.
-            grad_scaler.scale(loss).backward()
-            optimizer.step()
-            scheduler.step()
-
-            if step % 5000 == 0:
-                elapsed_time = time.time() - tic
-                loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
-                print(
-                    f"elapsed_time={elapsed_time:.2f}s | step={step} | "
-                    f"loss={loss:.5f} | "
-                    f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
-                    f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
+                # update occupancy grid
+                occupancy_grid.every_n_step(
+                    step=step,
+                    occ_eval_fn=lambda x: radiance_field.query_opacity(
+                        x, timestamps, render_step_size
+                    ),
                 )
 
-            if step >= 0 and step % max_steps == 0 and step > 0:
-                # evaluation
-                radiance_field.eval()
+                # render
+                rgb, acc, depth, n_rendering_samples = render_image(
+                    radiance_field,
+                    occupancy_grid,
+                    rays,
+                    scene_aabb,
+                    # rendering options
+                    near_plane=near_plane,
+                    far_plane=far_plane,
+                    render_step_size=render_step_size,
+                    render_bkgd=render_bkgd,
+                    cone_angle=args.cone_angle,
+                    alpha_thre=0.01 if step > 1000 else 0.00,
+                    # dnerf options
+                    timestamps=timestamps,
+                )
+                if n_rendering_samples == 0:
+                    continue
 
-                psnrs = []
-                with torch.no_grad():
-                    for i in tqdm.tqdm(range(len(test_dataset))):
-                        data = test_dataset[i]
-                        render_bkgd = data["color_bkgd"]
-                        rays = data["rays"]
-                        pixels = data["pixels"]
-                        timestamps = data["timestamps"]
+                # dynamic batch size for rays to keep sample batch size constant.
+                num_rays = len(pixels)
+                num_rays = int(
+                    num_rays * (target_sample_batch_size / float(n_rendering_samples))
+                )
+                train_dataset.update_num_rays(num_rays)
+                alive_ray_mask = acc.squeeze(-1) > 0
 
-                        # rendering
-                        rgb, acc, depth, _ = render_image(
-                            radiance_field,
-                            occupancy_grid,
-                            rays,
-                            scene_aabb,
-                            # rendering options
-                            near_plane=None,
-                            far_plane=None,
-                            render_step_size=render_step_size,
-                            render_bkgd=render_bkgd,
-                            cone_angle=args.cone_angle,
-                            alpha_thre=0.01,
-                            # test options
-                            test_chunk_size=args.test_chunk_size,
-                            # dnerf options
-                            timestamps=timestamps,
-                        )
-                        mse = F.mse_loss(rgb, pixels)
-                        psnr = -10.0 * torch.log(mse) / np.log(10.0)
-                        psnrs.append(psnr.item())
-                        # imageio.imwrite(
-                        #     "acc_binary_test.png",
-                        #     ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
-                        # )
-                        # imageio.imwrite(
-                        #     "rgb_test.png",
-                        #     (rgb.cpu().numpy() * 255).astype(np.uint8),
-                        # )
-                        # break
-                psnr_avg = sum(psnrs) / len(psnrs)
-                print(f"evaluation: psnr_avg={psnr_avg}")
-                train_dataset.training = True
+                # compute loss
+                loss = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
 
-            if step == max_steps:
-                print("training stops")
-                exit()
+                optimizer.zero_grad()
+                # do not unscale it because we are using Adam.
+                grad_scaler.scale(loss).backward()
+                optimizer.step()
+                scheduler.step()
 
-            step += 1
+                if step % 5000 == 0:
+                    elapsed_time = time.time() - tic
+                    loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
+                    print(
+                        f"elapsed_time={elapsed_time:.2f}s | step={step} | "
+                        f"loss={loss:.5f} | "
+                        f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
+                        f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
+                    )
+
+                    torch.save(
+                        radiance_field.state_dict(),
+                        os.path.join(
+                            ".", "network_out", "dnerf_nerf_step", str(step) + ".pt"
+                        ),
+                    )
+
+                if step >= 0 and step % max_steps == 0 and step > 0:
+                    # evaluation
+                    radiance_field.eval()
+
+                    psnrs = []
+                    with torch.no_grad():
+                        for i in tqdm.tqdm(range(len(test_dataset))):
+                            data = test_dataset[i]
+                            render_bkgd = data["color_bkgd"]
+                            rays = data["rays"]
+                            pixels = data["pixels"]
+                            timestamps = data["timestamps"]
+
+                            # rendering
+                            rgb, acc, depth, _ = render_image(
+                                radiance_field,
+                                occupancy_grid,
+                                rays,
+                                scene_aabb,
+                                # rendering options
+                                near_plane=None,
+                                far_plane=None,
+                                render_step_size=render_step_size,
+                                render_bkgd=render_bkgd,
+                                cone_angle=args.cone_angle,
+                                alpha_thre=0.01,
+                                # test options
+                                test_chunk_size=args.test_chunk_size,
+                                # dnerf options
+                                timestamps=timestamps,
+                            )
+                            mse = F.mse_loss(rgb, pixels)
+                            psnr = -10.0 * torch.log(mse) / np.log(10.0)
+                            psnrs.append(psnr.item())
+                            # imageio.imwrite(
+                            #     "acc_binary_test.png",
+                            #     ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
+                            # )
+                            # imageio.imwrite(
+                            #     "rgb_test.png",
+                            #     (rgb.cpu().numpy() * 255).astype(np.uint8),
+                            # )
+                            # break
+                    psnr_avg = sum(psnrs) / len(psnrs)
+                    print(f"evaluation: psnr_avg={psnr_avg}")
+                    train_dataset.training = True
+
+                if step == max_steps:
+                    print("training stops")
+                    exit()
+
+                step += 1
+    else:
+        radiance_field = DNeRFRadianceField()
+        radiance_field.load_state_dict(
+            torch.load(
+                os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
+            )
+        )
+        radiance_field.to(device)
+        radiance_field.eval()
+        step = 0
+        occupancy_grid.every_n_step(
+            step=step,
+            occ_eval_fn=lambda x: radiance_field.query_opacity(
+                x, timestamps, render_step_size
+            ),
+        )
+
+        with torch.no_grad():
+            for i in range(len(test_dataset)):
+                data = test_dataset[i]
+                render_bkgd = data["color_bkgd"]
+                rays = data["rays"]
+                pixels = data["pixels"]
+                timestamps = data["timestamps"]
+
+                # rendering
+                rgb, acc, depth, _ = render_image(
+                    radiance_field,
+                    occupancy_grid,
+                    rays,
+                    scene_aabb,
+                    # rendering options
+                    near_plane=None,
+                    far_plane=None,
+                    render_step_size=render_step_size,
+                    render_bkgd=render_bkgd,
+                    cone_angle=args.cone_angle,
+                    # test options
+                    test_chunk_size=args.test_chunk_size,
+                )
+
+                imageio.imwrite(
+                    os.path.join(".", "render_out", f"rgb_{i}.png"),
+                    (rgb.cpu().numpy() * 255).astype(np.uint8),
+                )
+
+                if i == 0:
+                    print((rgb.cpu().numpy()))
