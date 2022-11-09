@@ -278,7 +278,7 @@ if __name__ == "__main__":
                 rays = data["rays"]
                 pixels = data["pixels"]
                 timestamps = data["timestamps"]
-                
+
                 occupancy_grid.every_n_step(
                     step=step,
                     occ_eval_fn=lambda x: radiance_field.query_opacity(
@@ -298,8 +298,11 @@ if __name__ == "__main__":
                     render_step_size=render_step_size,
                     render_bkgd=render_bkgd,
                     cone_angle=args.cone_angle,
+                    alpha_thre=0.01,
                     # test options
                     test_chunk_size=args.test_chunk_size,
+                    # dnerf options
+                    timestamps=timestamps,
                 )
 
                 imageio.imwrite(
