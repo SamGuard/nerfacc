@@ -271,13 +271,6 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
-        occupancy_grid.every_n_step(
-            step=step,
-            occ_eval_fn=lambda x: radiance_field.query_opacity(
-                x, timestamps, render_step_size
-            ),
-        )
-
         with torch.no_grad():
             for i in range(len(test_dataset)):
                 data = test_dataset[i]
@@ -285,6 +278,13 @@ if __name__ == "__main__":
                 rays = data["rays"]
                 pixels = data["pixels"]
                 timestamps = data["timestamps"]
+                
+                occupancy_grid.every_n_step(
+                    step=step,
+                    occ_eval_fn=lambda x: radiance_field.query_opacity(
+                        x, timestamps, render_step_size
+                    ),
+                )
 
                 # rendering
                 rgb, acc, depth, _ = render_image(
@@ -309,3 +309,4 @@ if __name__ == "__main__":
 
                 if i == 0:
                     print((rgb.cpu().numpy()))
+                step += 1
