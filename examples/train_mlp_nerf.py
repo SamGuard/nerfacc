@@ -318,5 +318,10 @@ if __name__ == "__main__":
                 test_chunk_size=args.test_chunk_size,
             )
 
+            imageio.imwrite(
+                    os.path.join(".", "render_out", f"rgb_{i}.png"),
+                    (rgb.cpu().numpy() * 255).astype(np.uint8),
+            )
+
             if i == 0:
                 print((rgb.cpu().numpy()))
