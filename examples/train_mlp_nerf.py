@@ -290,38 +290,38 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
-        '''
         occupancy_grid._update(
             step=step,
             occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
         )
-        '''
-        for i in range(len(test_dataset)):
-            data = test_dataset[i]
-            render_bkgd = data["color_bkgd"]
-            rays = data["rays"]
-            pixels = data["pixels"]
+        
+        with torch.no_grad():
+            for i in range(len(test_dataset)):
+                data = test_dataset[i]
+                render_bkgd = data["color_bkgd"]
+                rays = data["rays"]
+                pixels = data["pixels"]
 
-            # rendering
-            rgb, acc, depth, _ = render_image(
-                radiance_field,
-                occupancy_grid,
-                rays,
-                scene_aabb,
-                # rendering options
-                near_plane=None,
-                far_plane=None,
-                render_step_size=render_step_size,
-                render_bkgd=render_bkgd,
-                cone_angle=args.cone_angle,
-                # test options
-                test_chunk_size=args.test_chunk_size,
-            )
+                # rendering
+                rgb, acc, depth, _ = render_image(
+                    radiance_field,
+                    occupancy_grid,
+                    rays,
+                    scene_aabb,
+                    # rendering options
+                    near_plane=None,
+                    far_plane=None,
+                    render_step_size=render_step_size,
+                    render_bkgd=render_bkgd,
+                    cone_angle=args.cone_angle,
+                    # test options
+                    test_chunk_size=args.test_chunk_size,
+                )
 
-            imageio.imwrite(
-                    os.path.join(".", "render_out", f"rgb_{i}.png"),
-                    (rgb.cpu().numpy() * 255).astype(np.uint8),
-            )
+                imageio.imwrite(
+                        os.path.join(".", "render_out", f"rgb_{i}.png"),
+                        (rgb.cpu().numpy() * 255).astype(np.uint8),
+                )
 
-            if i == 0:
-                print((rgb.cpu().numpy()))
+                if i == 0:
+                    print((rgb.cpu().numpy()))
