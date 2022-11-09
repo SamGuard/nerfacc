@@ -71,15 +71,9 @@ if __name__ == "__main__":
         help="Bool, whether to train or not, just render",
         type=lambda x: x.lower() == "true",
     )
-    parser.add_argument(
-        "--samples",
-        default="1024",
-        help="Number of samples",
-        type=int
-    )
+    parser.add_argument("--samples", default="1024", help="Number of samples", type=int)
     parser.add_argument("--cone_angle", type=float, default=0.0)
     args = parser.parse_args()
-
 
     render_n_samples = args.samples
 
@@ -273,7 +267,7 @@ if __name__ == "__main__":
                                 os.path.join(".", "render_out", f"rgb_{i}.png"),
                                 (rgb.cpu().numpy() * 255).astype(np.uint8),
                             )
-                            
+
                     psnr_avg = sum(psnrs) / len(psnrs)
                     print(f"evaluation: psnr_avg={psnr_avg}")
                     train_dataset.training = True
@@ -296,16 +290,15 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
+        occupancy_grid._update(
+            step=step,
+            occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
+        )
         for i in range(len(test_dataset)):
             data = test_dataset[i]
             render_bkgd = data["color_bkgd"]
             rays = data["rays"]
             pixels = data["pixels"]
-
-            occupancy_grid._update(
-                step=step,
-                occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
-            )
 
             # rendering
             rgb, acc, depth, _ = render_image(
@@ -322,15 +315,6 @@ if __name__ == "__main__":
                 # test options
                 test_chunk_size=args.test_chunk_size,
             )
-            radiance_field.to(device)
-            radiance_field.eval()
 
-            # update occupancy grid
-            occupancy_grid.every_n_step(
-                step=max_steps,
-                occ_eval_fn=lambda x: radiance_field.query_opacity(
-                    x, render_step_size
-                ),
-            )
             if i == 0:
                 print((rgb.cpu().numpy()))
