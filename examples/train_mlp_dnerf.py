@@ -265,7 +265,7 @@ if __name__ == "__main__":
         radiance_field.eval()
         step = 0
         num_time = 10
-        timestamps = torch.from_numpy(np.array([[0]])).to(device)
+        timestamps = torch.tensor([[0.0]], dtype=torch.float32).to(device)
         with torch.no_grad():
             for t in map(lambda x: x / num_time, range(num_time)):
                 for i in range(len(test_dataset)):
@@ -274,10 +274,7 @@ if __name__ == "__main__":
                     rays = data["rays"]
                     pixels = data["pixels"]
                     timestamps[0][0] = t
-                    print(timestamps)
-
-                    
-                    
+                    #print(timestamps)
 
                     occupancy_grid._update(
                         step=step,
@@ -317,6 +314,7 @@ if __name__ == "__main__":
                         os.path.join(".", "render_out", f"rgb_{i}.png"),
                         (rgb.cpu().numpy() * 255).astype(np.uint8),
                     )
+                    print(f"Image at time={t}, render={i}")
 
                     if i == 0:
                         print((rgb.cpu().numpy()))
