@@ -73,6 +73,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--samples", default="1024", help="Number of samples", type=int)
     parser.add_argument("--cone_angle", type=float, default=0.0)
+    parser.add_argument("--max_steps", type=int, default=50000)
     args = parser.parse_args()
 
     render_n_samples = args.samples
@@ -96,7 +97,7 @@ if __name__ == "__main__":
         ).item()
 
     # setup the radiance field we want to train.
-    max_steps = 50000
+    max_steps = args.max_steps
     grad_scaler = torch.cuda.amp.GradScaler(1)
     radiance_field = VanillaNeRFRadianceField().to(device)
     optimizer = torch.optim.Adam(radiance_field.parameters(), lr=5e-4)
