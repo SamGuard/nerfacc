@@ -265,8 +265,7 @@ if __name__ == "__main__":
         radiance_field.eval()
         step = 0
         num_time = 10
-        timestamps = torch.from_numpy(np.array([[0]]))
-        timestamps.to(device)
+        timestamps = torch.from_numpy(np.array([[0]])).to(device)
         with torch.no_grad():
             for t in map(lambda x: x / num_time, range(num_time)):
                 for i in range(len(test_dataset)):
