@@ -311,7 +311,7 @@ if __name__ == "__main__":
                     )
 
                     imageio.imwrite(
-                        os.path.join(".", "render_out", f"rgb_{i}.png"),
+                        os.path.join(".", "render_out", f"rgb_time_{t}_img_{i}.png"),
                         (rgb.cpu().numpy() * 255).astype(np.uint8),
                     )
                     print(f"Image at time={t}, render={i}")
