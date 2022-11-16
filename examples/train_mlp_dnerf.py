@@ -273,7 +273,7 @@ if __name__ == "__main__":
                     rays = data["rays"]
                     pixels = data["pixels"]
                     print(data["timestamps"])
-                    timestamps = [t]
+                    timestamps = [[t]]
 
                     occupancy_grid._update(
                         step=step,
