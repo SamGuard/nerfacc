@@ -67,6 +67,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--cone_angle", type=float, default=0.0)
     parser.add_argument("--max_steps", type=int, default=50000)
+    parser.add_argument("--model", type=str, default="")
     args = parser.parse_args()
 
     render_n_samples = 1024
@@ -77,8 +78,7 @@ if __name__ == "__main__":
     near_plane = None
     far_plane = None
     render_step_size = (
-        (scene_aabb[3:] - scene_aabb[:3]).max() *
-        math.sqrt(3) / render_n_samples
+        (scene_aabb[3:] - scene_aabb[:3]).max() * math.sqrt(3) / render_n_samples
     ).item()
 
     # setup the radiance field we want to train.
@@ -173,15 +173,13 @@ if __name__ == "__main__":
                 # dynamic batch size for rays to keep sample batch size constant.
                 num_rays = len(pixels)
                 num_rays = int(
-                    num_rays * (target_sample_batch_size /
-                                float(n_rendering_samples))
+                    num_rays * (target_sample_batch_size / float(n_rendering_samples))
                 )
                 train_dataset.update_num_rays(num_rays)
                 alive_ray_mask = acc.squeeze(-1) > 0
 
                 # compute loss
-                loss = F.smooth_l1_loss(
-                    rgb[alive_ray_mask], pixels[alive_ray_mask])
+                loss = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
 
                 optimizer.zero_grad()
                 # do not unscale it because we are using Adam.
@@ -191,8 +189,7 @@ if __name__ == "__main__":
 
                 if step % 5000 == 0:
                     elapsed_time = time.time() - tic
-                    loss = F.mse_loss(rgb[alive_ray_mask],
-                                      pixels[alive_ray_mask])
+                    loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
                         f"elapsed_time={elapsed_time:.2f}s | step={step} | "
                         f"loss={loss:.5f} | "
@@ -203,8 +200,7 @@ if __name__ == "__main__":
                     torch.save(
                         radiance_field.state_dict(),
                         os.path.join(
-                            ".", "network_out", "dnerf_nerf_step" +
-                            str(step) + ".pt"
+                            ".", "network_out", "dnerf_nerf_step" + str(step) + ".pt"
                         ),
                     )
 
@@ -263,11 +259,7 @@ if __name__ == "__main__":
     else:
         radiance_field = DNeRFRadianceField()
         radiance_field.load_state_dict(
-            torch.load(
-                os.path.join(
-                    ".", "network_out", "dnerf_nerf_step30000.pt"
-                ), device
-            )
+            torch.load(os.path.join(".", "network_out", args.model), device)
         )
         radiance_field.to(device)
         radiance_field.eval()
@@ -283,18 +275,20 @@ if __name__ == "__main__":
                     print(data["timestamps"])
                     timestamps = [t]
 
-                    occupancy_grid._update(step=step,
+                    occupancy_grid._update(
+                        step=step,
                         occ_eval_fn=lambda x: radiance_field.query_opacity(
                             x, timestamps, render_step_size
-                        ))
-                    '''
+                        ),
+                    )
+                    """
                     occupancy_grid.every_n_step(
                         step=step,
                         occ_eval_fn=lambda x: radiance_field.query_opacity(
                             x, timestamps, render_step_size
                         ),
                     )
-                    '''
+                    """
 
                     # rendering
                     rgb, acc, depth, _ = render_image(
