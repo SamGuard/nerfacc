@@ -317,5 +317,6 @@ if __name__ == "__main__":
                     print(f"Image at time={t}, render={i}")
 
                     if i == 0:
-                        print((rgb.cpu().numpy()))
+                        #print((rgb.cpu().numpy()))
+                        pass
                     step += 1

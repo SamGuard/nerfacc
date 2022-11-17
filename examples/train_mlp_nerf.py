@@ -74,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("--samples", default="1024", help="Number of samples", type=int)
     parser.add_argument("--cone_angle", type=float, default=0.0)
     parser.add_argument("--max_steps", type=int, default=50000)
+    parser.add_argument("--model", type=str, default="")
     args = parser.parse_args()
 
     render_n_samples = args.samples
@@ -284,9 +285,7 @@ if __name__ == "__main__":
         # Load model
         radiance_field = VanillaNeRFRadianceField()
         radiance_field.load_state_dict(
-            torch.load(
-                os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
-            )
+            torch.load(os.path.join(".", "network_out", args.model), device)
         )
         radiance_field.to(device)
         radiance_field.eval()
@@ -295,7 +294,7 @@ if __name__ == "__main__":
             step=step,
             occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
         )
-        
+
         with torch.no_grad():
             for i in range(len(test_dataset)):
                 data = test_dataset[i]
@@ -320,8 +319,8 @@ if __name__ == "__main__":
                 )
 
                 imageio.imwrite(
-                        os.path.join(".", "render_out", f"rgb_{i}.png"),
-                        (rgb.cpu().numpy() * 255).astype(np.uint8),
+                    os.path.join(".", "render_out", f"rgb_{i}.png"),
+                    (rgb.cpu().numpy() * 255).astype(np.uint8),
                 )
 
                 if i == 0:
