@@ -301,6 +301,7 @@ if __name__ == "__main__":
                 render_bkgd = data["color_bkgd"]
                 rays = data["rays"]
                 pixels = data["pixels"]
+                print(f"Rendering Image {i}")
 
                 # rendering
                 rgb, acc, depth, _ = render_image(
@@ -324,4 +325,5 @@ if __name__ == "__main__":
                 )
 
                 if i == 0:
-                    print((rgb.cpu().numpy()))
+                    pass
+                    #print((rgb.cpu().numpy()))
