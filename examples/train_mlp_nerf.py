@@ -303,6 +303,13 @@ if __name__ == "__main__":
                 pixels = data["pixels"]
                 print(f"Rendering Image {i}")
 
+                occupancy_grid.every_n_step(
+                    step=step,
+                    occ_eval_fn=lambda x: radiance_field.query_opacity(
+                        x, render_step_size
+                    ),
+                )
+
                 # rendering
                 rgb, acc, depth, _ = render_image(
                     radiance_field,
