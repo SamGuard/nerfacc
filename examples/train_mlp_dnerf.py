@@ -265,6 +265,7 @@ if __name__ == "__main__":
         radiance_field.eval()
         step = 0
         num_time = 10
+        timestamps = torch.tensor([[0.0]], dtype=torch.float32).to(device)
 
         for i in range(10):
             occupancy_grid._update(
@@ -274,7 +275,6 @@ if __name__ == "__main__":
                 ),
             )
 
-        timestamps = torch.tensor([[0.0]], dtype=torch.float32).to(device)
         with torch.no_grad():
             for t in map(lambda x: x / num_time, range(num_time)):
                 for i in range(len(test_dataset)):
