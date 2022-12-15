@@ -152,7 +152,7 @@ if __name__ == "__main__":
                 )
 
                 # render
-                rgb, acc, depth, divergence, n_rendering_samples = render_image(
+                rgb, acc, depth, n_rendering_samples, divergence = render_image(
                     radiance_field,
                     occupancy_grid,
                     rays,
@@ -179,10 +179,11 @@ if __name__ == "__main__":
                 alive_ray_mask = acc.squeeze(-1) > 0
 
                 # compute loss
-                divTargets = torch.zeros_like(divergence)
-                lossDiverge = F.smooth_l1_loss(divergence, divTargets)
-                lossPixels = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
-                loss = lossDiverge + lossPixels
+                div_targets = torch.zeros_like(divergence)
+                loss_diverge = F.smooth_l1_loss(divergence, div_targets)
+                loss_pixels = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
+                loss = loss_diverge + loss_pixels
+                print(loss_diverge)
 
                 optimizer.zero_grad()
                 # do not unscale it because we are using Adam.
@@ -221,7 +222,7 @@ if __name__ == "__main__":
                             timestamps = data["timestamps"]
 
                             # rendering
-                            rgb, acc, depth, _ = render_image(
+                            rgb, acc, depth, _, _ = render_image(
                                 radiance_field,
                                 occupancy_grid,
                                 rays,

@@ -1,0 +1,14 @@
+python3 examples/train_mlp_nerf.py --scene lego --max_steps 30000
+python3 examples/train_mlp_nerf.py --scene lego --just_render true --model vanilla_nerf_step30000.pt
+
+python3 examples/train_mlp_dnerf.py --scene lego --max_steps 30000
+python3 examples/train_mlp_dnerf.py --scene lego --just_render true --model dnerf_nerf_step30000.pt
+
+python3 examples/train_mlp_zdnerf.py --scene lego --max_steps 5000
+
+cd render_out/
+zip lego_vanilla_30k.zip *.png
+mv lego_vanilla_30k.zip /mnt/io/
+cd ../network_out
+zip lego_vanilla_30k_t.zip *.pt
+mv lego_vanilla_30k_t.zip /mnt/io/

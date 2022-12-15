@@ -299,6 +299,7 @@ class ZD_NeRFRadianceField(nn.Module):
             output_init=functools.partial(torch.nn.init.uniform_, b=1e-4),
         )
         self.nerf = VanillaNeRFRadianceField()
+        self.zero_divergence = True
 
     def query_opacity(self, x, timestamps, step_size):
         idxs = torch.randint(0, len(timestamps), (x.shape[0],), device=x.device)

@@ -120,10 +120,15 @@ def render_image(
         torch.cat(r, dim=0) if isinstance(r[0], torch.Tensor) else r
         for r in zip(*results)
     ]
-    return (
+    out = (
         colors.view((*rays_shape[:-1], -1)),
         opacities.view((*rays_shape[:-1], -1)),
         depths.view((*rays_shape[:-1], -1)),
         sum(n_rendering_samples),
-        divergence_fn()
+        
     )
+    try:
+        radiance_field.zero_divergence == True
+        return out + (divergence_fn(),)
+    except:
+        return out
