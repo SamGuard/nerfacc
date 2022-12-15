@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 import tqdm
 from datasets.dnerf_synthetic import SubjectLoader
-from radiance_fields.mlp import DNeRFRadianceField
+from radiance_fields.mlp import ZD_NeRFRadianceField
 from utils import render_image, set_random_seed
 
 from nerfacc import ContractionType, OccupancyGrid
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # setup the radiance field we want to train.
     max_steps = args.max_steps
     grad_scaler = torch.cuda.amp.GradScaler(1)
-    radiance_field = DNeRFRadianceField().to(device)
+    radiance_field = ZD_NeRFRadianceField().to(device)
     optimizer = torch.optim.Adam(radiance_field.parameters(), lr=5e-4)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer,
@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
                 step += 1
     else:
-        radiance_field = DNeRFRadianceField()
+        radiance_field = ZD_NeRFRadianceField()
         radiance_field.load_state_dict(
             torch.load(os.path.join(".", "network_out", args.model), device)
         )

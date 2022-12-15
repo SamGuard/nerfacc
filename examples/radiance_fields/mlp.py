@@ -281,3 +281,45 @@ class DNeRFRadianceField(nn.Module):
             torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
         )
         return self.nerf(x, condition=condition)
+
+
+
+class ZD_NeRFRadianceField(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.posi_encoder = SinusoidalEncoder(3, 0, 4, True)
+        self.time_encoder = SinusoidalEncoder(1, 0, 4, True)
+        self.warp = MLP(
+            input_dim=self.posi_encoder.latent_dim
+            + self.time_encoder.latent_dim,
+            output_dim=3,
+            net_depth=4,
+            net_width=64,
+            skip_layer=2,
+            output_init=functools.partial(torch.nn.init.uniform_, b=1e-4),
+        )
+        self.nerf = VanillaNeRFRadianceField()
+
+    def query_opacity(self, x, timestamps, step_size):
+        idxs = torch.randint(0, len(timestamps), (x.shape[0],), device=x.device)
+        t = timestamps[idxs]
+        density = self.query_density(x, t)
+        # if the density is small enough those two are the same.
+        # opacity = 1.0 - torch.exp(-density * step_size)
+        opacity = density * step_size
+        return opacity
+
+    def query_density(self, x, t):
+        x = x + self.warp(
+            torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
+        )
+        return self.nerf.query_density(x)
+
+    def get_divergence(self, t, min_pos=-10.0, max_pos=10.0, step=0.1):
+        return torch.zeros_like(t)
+
+    def forward(self, x, t, condition=None):
+        x = x + self.warp(
+            torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
+        )
+        return self.nerf(x, condition=condition)
