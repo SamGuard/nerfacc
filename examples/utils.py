@@ -77,6 +77,15 @@ def render_image(
             return radiance_field(positions, t, t_dirs)
         return radiance_field(positions, t_dirs)
 
+    def divergence_fn():
+        if(not radiance_field.training):
+            return torch.zeros_like(timestamps)
+        if timestamps is not None:
+            # zdnerf
+            return radiance_field.get_divergence(timestamps)
+            
+        return torch.zeros_like(timestamps)
+
     results = []
     chunk = (
         torch.iinfo(torch.int32).max
@@ -116,4 +125,5 @@ def render_image(
         opacities.view((*rays_shape[:-1], -1)),
         depths.view((*rays_shape[:-1], -1)),
         sum(n_rendering_samples),
+        divergence_fn()
     )
