@@ -35,6 +35,7 @@ def render_image(
     test_chunk_size: int = 8192,
     # only useful for dnerf
     timestamps: Optional[torch.Tensor] = None,
+    skip_divergence = False,
 ):
     """Render the pixels of an image."""
     rays_shape = rays.origins.shape
@@ -127,10 +128,6 @@ def render_image(
         sum(n_rendering_samples),
         
     )
-    doDiv = False
-    try:
-        doDiv = radiance_field.zero_divergence
-    except:
-        return out
-
-    return  out + (divergence_fn(),) if doDiv else out
+    if skip_divergence:
+        return out + (torch.zeros_like(timestamps))
+    return  out + (divergence_fn(),)

@@ -164,8 +164,9 @@ if __name__ == "__main__":
                     render_bkgd=render_bkgd,
                     cone_angle=args.cone_angle,
                     alpha_thre=0.01 if step > 1000 else 0.00,
-                    # dnerf options
+                    # zdnerf options
                     timestamps=timestamps,
+                    skip_divergence=not (step % 10 == 0)
                 )
                 if n_rendering_samples == 0:
                     continue
