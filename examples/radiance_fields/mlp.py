@@ -363,6 +363,7 @@ class ZD_NeRFRadianceField(nn.Module):
         steps=10,
     ):
         out = torch.zeros_like(timestamps)
+        print(timestamps)
         for i, t in enumerate(timestamps):
             if(self.divergence_cache.get(t) != None):
                 print("Used cache for", t)
