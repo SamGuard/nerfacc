@@ -318,11 +318,11 @@ class ZD_NeRFRadianceField(nn.Module):
 
     def genOffsets(self, dims: torch.tensor) -> torch.tensor:
         offIter = product(range(-1, 2), repeat=len(dims))
-        offsets = torch.zeros(size=(3 ** len(dims), len(dims)))
-        for i, o in enumerate(offIter):
-            offsets[i] = o
-
-        out = torch.tensor(list(offsets), dtype=torch.int64).cuda()
+        offsets = []
+        for o in offIter:
+            offsets.append(o)
+        
+        out = torch.tensor(offsets, dtype=torch.int64).cuda()
         return out
 
     def divField(self, vec: torch.tensor) -> torch.tensor:
