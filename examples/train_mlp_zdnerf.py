@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
                 radiance_field.clear_divergence_cache()
 
-                if step % 100 == 0:
+                if step % 1 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
