@@ -185,10 +185,13 @@ if __name__ == "__main__":
                 loss = loss_diverge + loss_pixels
 
                 optimizer.zero_grad()
+
                 # do not unscale it because we are using Adam.
                 grad_scaler.scale(loss).backward()
                 optimizer.step()
                 scheduler.step()
+
+                radiance_field.clear_divergence_cache()
 
                 if step % 100 == 0:
                     elapsed_time = time.time() - tic
