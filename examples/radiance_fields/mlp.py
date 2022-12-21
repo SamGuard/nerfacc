@@ -5,7 +5,9 @@ Copyright (c) 2022 Ruilong Li, UC Berkeley.
 import functools
 import math
 from itertools import product
+
 from typing import Callable, Optional
+import time
 
 import torch
 import torch.nn as nn
@@ -363,7 +365,8 @@ class ZD_NeRFRadianceField(nn.Module):
         steps=10,
     ):
         out = torch.zeros_like(timestamps)
-        print(timestamps)
+        startTime = time.time()
+        
         for i, t in enumerate(timestamps):
             if(self.divergence_cache.get(t) != None):
                 print("Used cache for", t)
@@ -393,6 +396,7 @@ class ZD_NeRFRadianceField(nn.Module):
             del pos
             del tArray
             del vecs
+        print("This took:", time.time() - startTime, "Second")
         return out
 
     def forward(self, x, t, condition=None):
