@@ -347,7 +347,6 @@ class ZD_NeRFRadianceField(nn.Module):
             )
             out += canvas
         del canvas
-        del out
         del offsets
         del dims
         return torch.sum(torch.abs(out[1:-1, 1:-1, 1:-1]), dim=-1)
