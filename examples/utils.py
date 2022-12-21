@@ -78,6 +78,7 @@ def render_image(
         return radiance_field(positions, t_dirs)
 
     def divergence_fn():
+        print("div")
         if(not radiance_field.training):
             return torch.zeros_like(timestamps)
         if timestamps is not None:
