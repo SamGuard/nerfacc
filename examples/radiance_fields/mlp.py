@@ -323,6 +323,8 @@ class ZD_NeRFRadianceField(nn.Module):
             offsets.append(o)
 
         out = torch.tensor(offsets, dtype=torch.int64).cuda()
+        del offsets
+        del offIter
         return out
 
     def divField(self, vec: torch.tensor) -> torch.tensor:
@@ -344,6 +346,10 @@ class ZD_NeRFRadianceField(nn.Module):
                 vec * o
             )
             out += canvas
+        del canvas
+        del out
+        del offsets
+        del dims
         return torch.sum(torch.abs(out[1:-1, 1:-1, 1:-1]), dim=-1)
 
     def get_divergence(
@@ -374,6 +380,9 @@ class ZD_NeRFRadianceField(nn.Module):
                 )
             ).reshape(shape=(steps, steps, steps, 3))
             out[i] = torch.sum(self.divField(vecs))
+            del pos
+            del tArray
+            del vecs
         return out
 
     def forward(self, x, t, condition=None):
