@@ -356,7 +356,7 @@ class ZD_NeRFRadianceField(nn.Module):
         timestamps,
         min_pos=(-10.0, -10.0, -10.0),
         max_pos=(10.0, 10.0, 10.0),
-        steps=100,
+        steps=10,
     ):
         out = torch.zeros_like(timestamps)
         for i, t in enumerate(timestamps):
