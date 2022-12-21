@@ -304,7 +304,7 @@ if __name__ == "__main__":
                     """
 
                     # rendering
-                    rgb, acc, depth, _ = render_image(
+                    rgb, acc, depth, _,_ = render_image(
                         radiance_field,
                         occupancy_grid,
                         rays,

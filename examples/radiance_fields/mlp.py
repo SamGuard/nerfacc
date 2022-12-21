@@ -300,6 +300,7 @@ class ZD_NeRFRadianceField(nn.Module):
         )
         self.nerf = VanillaNeRFRadianceField()
         self.zero_divergence = True
+        self.divergence_cache = {}
 
     def query_opacity(self, x, timestamps, step_size):
         idxs = torch.randint(0, len(timestamps), (x.shape[0],), device=x.device)
@@ -351,6 +352,9 @@ class ZD_NeRFRadianceField(nn.Module):
         del dims
         return torch.sum(torch.abs(out[1:-1, 1:-1, 1:-1]), dim=-1)
 
+    def clear_divergence_cache(self):
+        self.divergence_cache = {}
+
     def get_divergence(
         self,
         timestamps,
@@ -360,6 +364,10 @@ class ZD_NeRFRadianceField(nn.Module):
     ):
         out = torch.zeros_like(timestamps)
         for i, t in enumerate(timestamps):
+            if(self.divergence_cache.get(t) != None):
+                out[i] = self.divergence_cache[t]
+                continue
+
             xs = torch.linspace(min_pos[0], max_pos[0], steps=steps)
             ys = torch.linspace(min_pos[1], max_pos[1], steps=steps)
             zs = torch.linspace(min_pos[2], max_pos[2], steps=steps)
@@ -379,6 +387,7 @@ class ZD_NeRFRadianceField(nn.Module):
                 )
             ).reshape(shape=(steps, steps, steps, 3))
             out[i] = torch.sum(self.divField(vecs))
+            self.divergence_cache[t] = out[i]
             del pos
             del tArray
             del vecs
