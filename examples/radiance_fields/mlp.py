@@ -4,6 +4,7 @@ Copyright (c) 2022 Ruilong Li, UC Berkeley.
 
 import functools
 import math
+from itertools import product
 from typing import Callable, Optional
 
 import torch
@@ -283,7 +284,6 @@ class DNeRFRadianceField(nn.Module):
         return self.nerf(x, condition=condition)
 
 
-
 class ZD_NeRFRadianceField(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -316,8 +316,65 @@ class ZD_NeRFRadianceField(nn.Module):
         )
         return self.nerf.query_density(x)
 
-    def get_divergence(self, t, min_pos=-10.0, max_pos=10.0, step=0.1):
-        return torch.zeros_like(t)
+    def genOffsets(self, dims: torch.tensor) -> torch.tensor:
+        offIter = product(range(-1, 2), repeat=len(dims))
+        offsets = torch.zeros(size=(3 ** len(dims), len(dims)))
+        for i, o in enumerate(offIter):
+            offsets[i] = o
+
+        out = torch.tensor(list(offsets), dtype=torch.int64).cuda()
+        return out
+
+    def divField(self, vec: torch.tensor) -> torch.tensor:
+        dims = torch.tensor(vec.shape[:-1])
+
+        offsets = self.genOffsets(dims)
+
+        paddedShape = tuple(map(lambda x: x + 2, vec.shape[:-1])) + (
+            vec.shape[-1],
+        )
+        canvas = torch.zeros(size=paddedShape).cuda()
+        out = torch.zeros_like(canvas)
+        for o in offsets:
+            canvas[:] = 0
+            start = o + 1
+            end = dims + o + 1
+
+            canvas[start[0] : end[0], start[1] : end[1], start[2] : end[2]] = (
+                vec * o
+            )
+            out += canvas
+        return torch.sum(torch.abs(out[1:-1, 1:-1, 1:-1]), dim=-1)
+
+    def get_divergence(
+        self,
+        timestamps,
+        min_pos=(-10.0, -10.0, -10.0),
+        max_pos=(10.0, 10.0, 10.0),
+        steps=100,
+    ):
+        out = torch.zeros_like(timestamps)
+        for i, t in enumerate(timestamps):
+            xs = torch.linspace(min_pos[0], max_pos[0], steps=steps)
+            ys = torch.linspace(min_pos[1], max_pos[1], steps=steps)
+            zs = torch.linspace(min_pos[2], max_pos[2], steps=steps)
+            x, y, z = torch.meshgrid(xs, ys, zs, indexing="xy")
+            pos = self.posi_encoder(
+                torch.stack((x, y, z), dim=3).flatten(start_dim=0, end_dim=2).cuda()
+            )
+            tArray = self.time_encoder(
+                torch.zeros(size=(steps * steps * steps, 1)).cuda()
+            )
+            tArray[:] = t
+
+            vecs = self.warp(
+                torch.cat(
+                    (pos, tArray),
+                    dim=1,
+                )
+            ).reshape(shape=(steps, steps, steps, 3))
+            out[i] = torch.sum(self.divField(vecs))
+        return out
 
     def forward(self, x, t, condition=None):
         x = x + self.warp(

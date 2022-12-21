@@ -183,7 +183,6 @@ if __name__ == "__main__":
                 loss_diverge = F.smooth_l1_loss(divergence, div_targets)
                 loss_pixels = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                 loss = loss_diverge + loss_pixels
-                print(loss_diverge)
 
                 optimizer.zero_grad()
                 # do not unscale it because we are using Adam.
@@ -191,7 +190,7 @@ if __name__ == "__main__":
                 optimizer.step()
                 scheduler.step()
 
-                if step % 5000 == 0:
+                if step % 100 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
