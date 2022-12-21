@@ -365,14 +365,8 @@ class ZD_NeRFRadianceField(nn.Module):
         steps=10,
     ):
         out = torch.zeros_like(timestamps)
-        startTime = time.time()
         
         for i, t in enumerate(timestamps):
-            if(self.divergence_cache.get(t) != None):
-                print("Used cache for", t)
-                out[i] = self.divergence_cache[t]
-                continue
-
             xs = torch.linspace(min_pos[0], max_pos[0], steps=steps)
             ys = torch.linspace(min_pos[1], max_pos[1], steps=steps)
             zs = torch.linspace(min_pos[2], max_pos[2], steps=steps)
@@ -392,11 +386,9 @@ class ZD_NeRFRadianceField(nn.Module):
                 )
             ).reshape(shape=(steps, steps, steps, 3))
             out[i] = torch.sum(self.divField(vecs))
-            self.divergence_cache[t] = out[i]
             del pos
             del tArray
             del vecs
-        print("This took:", time.time() - startTime, "Second")
         return out
 
     def forward(self, x, t, condition=None):
