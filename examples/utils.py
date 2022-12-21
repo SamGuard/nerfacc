@@ -129,5 +129,5 @@ def render_image(
         
     )
     if skip_divergence:
-        return out + (torch.zeros_like(timestamps))
+        return out + (torch.zeros_like(timestamps),)
     return  out + (divergence_fn(),)
