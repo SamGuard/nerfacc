@@ -127,8 +127,10 @@ def render_image(
         sum(n_rendering_samples),
         
     )
+    doDiv = False
     try:
-        radiance_field.zero_divergence == True
-        return out + (divergence_fn(),)
+        doDiv = radiance_field.zero_divergence
     except:
         return out
+
+    return  out + (divergence_fn(),) if doDiv else out
