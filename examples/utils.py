@@ -35,7 +35,6 @@ def render_image(
     test_chunk_size: int = 8192,
     # only useful for dnerf
     timestamps: Optional[torch.Tensor] = None,
-    skip_divergence = False,
 ):
     """Render the pixels of an image."""
     rays_shape = rays.origins.shape
@@ -78,15 +77,6 @@ def render_image(
             return radiance_field(positions, t, t_dirs)
         return radiance_field(positions, t_dirs)
 
-    def divergence_fn():
-        if(not radiance_field.training):
-            return torch.zeros_like(timestamps)
-        if timestamps is not None:
-            # zdnerf
-            return radiance_field.get_divergence(timestamps)
-            
-        return torch.zeros_like(timestamps)
-
     results = []
     chunk = (
         torch.iinfo(torch.int32).max
@@ -121,13 +111,9 @@ def render_image(
         torch.cat(r, dim=0) if isinstance(r[0], torch.Tensor) else r
         for r in zip(*results)
     ]
-    out = (
+    return (
         colors.view((*rays_shape[:-1], -1)),
         opacities.view((*rays_shape[:-1], -1)),
         depths.view((*rays_shape[:-1], -1)),
         sum(n_rendering_samples),
-        
     )
-    if skip_divergence:
-        return out + (torch.zeros_like(timestamps),)
-    return  out + (divergence_fn(),)
