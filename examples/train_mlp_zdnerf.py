@@ -178,14 +178,15 @@ if __name__ == "__main__":
                 train_dataset.update_num_rays(num_rays)
                 alive_ray_mask = acc.squeeze(-1) > 0
 
-                div_timestamps = torch.randn(20).cuda()
-                divergence = radiance_field.get_divergence(div_timestamps)
+                #div_timestamps = torch.randn(20).cuda()
+                #divergence = radiance_field.get_divergence(div_timestamps)
 
                 # compute loss
-                div_targets = torch.zeros_like(divergence)
-                loss_diverge = F.smooth_l1_loss(divergence, div_targets)
+                #div_targets = torch.zeros_like(divergence)
+                #loss_diverge = F.smooth_l1_loss(divergence, div_targets)
                 loss_pixels = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
-                loss = loss_diverge + loss_pixels
+                #loss = loss_diverge + loss_pixels
+                loss = loss_pixels
 
                 optimizer.zero_grad()
 
@@ -200,7 +201,7 @@ if __name__ == "__main__":
                     print(
                         f"elapsed_time={elapsed_time:.2f}s | step={step} | "
                         f"loss={loss:.5f} | "
-                        f"div_loss{loss_diverge:.5f} |"
+                        #f"div_loss{loss_diverge:.5f} |"
                         f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                         f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                     )
@@ -226,7 +227,7 @@ if __name__ == "__main__":
                             timestamps = data["timestamps"]
 
                             # rendering
-                            rgb, acc, depth, _, _ = render_image(
+                            rgb, acc, depth, _ = render_image(
                                 radiance_field,
                                 occupancy_grid,
                                 rays,
