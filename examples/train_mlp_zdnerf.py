@@ -178,7 +178,7 @@ if __name__ == "__main__":
                 train_dataset.update_num_rays(num_rays)
                 alive_ray_mask = acc.squeeze(-1) > 0
 
-                div_timestamps = torch.randn(10).cuda()
+                div_timestamps = torch.randn(20).cuda()
                 divergence = radiance_field.get_divergence(div_timestamps)
 
                 # compute loss
@@ -200,6 +200,7 @@ if __name__ == "__main__":
                     print(
                         f"elapsed_time={elapsed_time:.2f}s | step={step} | "
                         f"loss={loss:.5f} | "
+                        f"div_loss{loss_diverge:.5f} |"
                         f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                         f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                     )
