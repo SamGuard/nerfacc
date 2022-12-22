@@ -152,7 +152,7 @@ if __name__ == "__main__":
                 )
 
                 # render
-                rgb, acc, depth, n_rendering_samples, divergence = render_image(
+                rgb, acc, depth, n_rendering_samples = render_image(
                     radiance_field,
                     occupancy_grid,
                     rays,
@@ -179,6 +179,9 @@ if __name__ == "__main__":
                 train_dataset.update_num_rays(num_rays)
                 alive_ray_mask = acc.squeeze(-1) > 0
 
+                div_timestamps = torch.linspace(0, 1, 10).cuda()
+                divergence = radiance_field.get_divergence(div_targets)
+                
                 # compute loss
                 div_targets = torch.zeros_like(divergence)
                 loss_diverge = F.smooth_l1_loss(divergence, div_targets)
@@ -306,7 +309,7 @@ if __name__ == "__main__":
                     """
 
                     # rendering
-                    rgb, acc, depth, _,_ = render_image(
+                    rgb, acc, depth, _ = render_image(
                         radiance_field,
                         occupancy_grid,
                         rays,
