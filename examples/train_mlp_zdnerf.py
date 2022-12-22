@@ -166,7 +166,6 @@ if __name__ == "__main__":
                     alpha_thre=0.01 if step > 1000 else 0.00,
                     # zdnerf options
                     timestamps=timestamps,
-                    skip_divergence=not (step % 10 == 0)
                 )
                 if n_rendering_samples == 0:
                     continue
@@ -181,7 +180,7 @@ if __name__ == "__main__":
 
                 div_timestamps = torch.linspace(0, 1, 10).cuda()
                 divergence = radiance_field.get_divergence(div_targets)
-                
+
                 # compute loss
                 div_targets = torch.zeros_like(divergence)
                 loss_diverge = F.smooth_l1_loss(divergence, div_targets)
