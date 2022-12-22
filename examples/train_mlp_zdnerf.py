@@ -179,7 +179,7 @@ if __name__ == "__main__":
                 alive_ray_mask = acc.squeeze(-1) > 0
 
                 div_timestamps = torch.linspace(0, 1, 10).cuda()
-                divergence = radiance_field.get_divergence(div_targets)
+                divergence = radiance_field.get_divergence(div_timestamps)
 
                 # compute loss
                 div_targets = torch.zeros_like(divergence)
