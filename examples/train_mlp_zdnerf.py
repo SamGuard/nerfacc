@@ -273,7 +273,7 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
-        num_time = 10
+        num_time = 100
         timestamps = torch.tensor([[0.0]], dtype=torch.float32).to(device)
 
         for i in range(10):
@@ -285,8 +285,9 @@ if __name__ == "__main__":
             )
 
         with torch.no_grad():
-            for t in map(lambda x: 2.0 * x / num_time, range(num_time)):
-                for i in range(len(test_dataset)):
+            for t in map(lambda x: 10.0 * x / num_time, range(num_time)):
+                #for i in range(len(test_dataset)):
+                for i in [3]:
                     data = test_dataset[i]
                     render_bkgd = data["color_bkgd"]
                     rays = data["rays"]
