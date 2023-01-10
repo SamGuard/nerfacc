@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 optimizer.step()
                 scheduler.step()
 
-                if step % 5000 == 0:
+                if step % 1 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
@@ -200,7 +200,7 @@ if __name__ == "__main__":
                     torch.save(
                         radiance_field.state_dict(),
                         os.path.join(
-                            ".", "network_out", "dnerf_nerf_step" + str(step) + ".pt"
+                            ".", "network_out", "zdnerf_nerf_step" + str(step) + ".pt"
                         ),
                     )
 
