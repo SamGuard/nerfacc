@@ -170,7 +170,7 @@ class NerfMLP(nn.Module):
 
 
 class ODEfunc(nn.Module):
-    def __init__(self, input_dim, output_dim, width=64, depth=8):
+    def __init__(self, input_dim, output_dim, width=32, depth=4):
         super(ODEfunc, self).__init__()
         self.layers = nn.ModuleList()
         
