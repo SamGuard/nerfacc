@@ -313,6 +313,7 @@ if __name__ == "__main__":
                     os.path.join(".", "render_out", f"rgb_{i}.png"),
                     (rgb.cpu().numpy() * 255).astype(np.uint8),
                 )
+                print("saved:", os.path.join(".", "render_out", f"rgb_{i}.png"))
 
                 if i == 0:
                     print((rgb.cpu().numpy()))
