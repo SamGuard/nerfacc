@@ -186,6 +186,7 @@ class ODEfunc(nn.Module):
         
 
     def forward(self, t, x):
+        print(x.shape)
         x = torch.cat((x, (torch.zeros_like(x) + t)), dim=1)
         print(x.shape)
         print(t.shape)
