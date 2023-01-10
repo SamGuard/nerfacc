@@ -180,13 +180,16 @@ class ODEfunc(nn.Module):
         self.layers.append(nn.Linear(width, output_dim))
 
         for l in self.layers:
-            #nn.init.normal_(l.weight, mean=0, std=0.00001)
-            nn.init.constant_(l.weight, 0.001)
+            nn.init.normal_(l.weight, mean=0, std=0.0001)
+            #nn.init.constant_(l.weight, 0.001)
             nn.init.constant_(l.bias, val=0)
         
 
     def forward(self, t, x):
         x = torch.cat((x, (torch.zeros_like(x) + t)), dim=1)
+        print(x.shape)
+        print(t.shape)
+        print("+++++")
         for l in self.layers:
             x = F.tanh(l(x))
         return x
@@ -386,7 +389,7 @@ class ZD_NeRFRadianceField(nn.Module):
         print(x.shape)
         print(t.shape)
         print("-----")
-        x = self.warp( t.flatten(), x)
+        x = self.warp(t.flatten(), x)
         return self.nerf.query_density(x)
 
     def forward(self, x, t, condition=None):
