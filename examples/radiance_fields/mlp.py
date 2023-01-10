@@ -186,11 +186,8 @@ class ODEfunc(nn.Module):
         
 
     def forward(self, t, x):
-        print(x.shape)
         x = torch.cat((x, torch.zeros(size=(x.shape[0], 1), device="cuda:0") + t), dim=1)
-        print(x.shape)
-        print(t.shape)
-        print("+++++")
+        
         for l in self.layers:
             x = F.tanh(l(x))
         return x
@@ -387,9 +384,6 @@ class ZD_NeRFRadianceField(nn.Module):
         return opacity
 
     def query_density(self, x, t):
-        print(x.shape)
-        print(t.shape)
-        print("-----")
         x = self.warp(t.flatten(), x)
         return self.nerf.query_density(x)
 
