@@ -229,7 +229,7 @@ class ODEBlock(nn.Module):
         # Need to sort in order of time
         time_steps = torch.sort(t)
         args = torch.argsort(t)
-
+        print(time_steps)
         # Morphed points
         morphed = odeint(
             self.odefunc,
