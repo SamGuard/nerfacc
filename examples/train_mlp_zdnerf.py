@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 optimizer.step()
                 scheduler.step()
 
-                if step % 1 == 0:
+                if step % 100 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
@@ -315,6 +315,4 @@ if __name__ == "__main__":
                 )
                 print("saved:", os.path.join(".", "render_out", f"rgb_{i}.png"))
 
-                if i == 0:
-                    print((rgb.cpu().numpy()))
                 step += 1

@@ -170,13 +170,13 @@ class NerfMLP(nn.Module):
 
 
 class ODEfunc(nn.Module):
-    def __init__(self, input_dim, output_dim, width=64):
+    def __init__(self, input_dim, output_dim, width=64, depth=8):
         super(ODEfunc, self).__init__()
         self.layers = nn.ModuleList()
         
         self.layers.append(nn.Linear(input_dim, width))
-        self.layers.append(nn.Linear(width, width))
-        self.layers.append(nn.Linear(width, width))
+        for i in range(depth-2):
+            self.layers.append(nn.Linear(width, width))
         self.layers.append(nn.Linear(width, output_dim))
 
         for l in self.layers:
@@ -211,12 +211,10 @@ class ODEBlock(nn.Module):
         r = [0,1]
         morphed = [
             [   
-                [1, 2],
                 [-2, -4],
                 [ 4,  8]
             ],
             [
-                [3, 4],
                 [-6, -8],
                 [12, 16]
             ]
