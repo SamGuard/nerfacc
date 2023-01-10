@@ -189,7 +189,7 @@ class ODEfunc(nn.Module):
         x = torch.cat((x, torch.zeros(size=(x.shape[0], 1), device="cuda:0") + t), dim=1)
         
         for l in self.layers:
-            x = F.tanh(l(x))
+            x = torch.tanh(l(x))
         return x
 
 
@@ -240,7 +240,7 @@ class ODEBlock(nn.Module):
         out = torch.zeros_like(x)
 
         for i,m,a in zip(range(x.shape[0]), morphed, args):
-            out[i] = m[a+1]
+            out[i] = m[a]
         
         return out
 
