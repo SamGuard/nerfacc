@@ -164,7 +164,7 @@ if __name__ == "__main__":
                     render_bkgd=render_bkgd,
                     cone_angle=args.cone_angle,
                     alpha_thre=0.01 if step > 1000 else 0.00,
-                    # zdnerf options
+                    # dnerf options
                     timestamps=timestamps,
                 )
                 if n_rendering_samples == 0:
@@ -178,30 +178,21 @@ if __name__ == "__main__":
                 train_dataset.update_num_rays(num_rays)
                 alive_ray_mask = acc.squeeze(-1) > 0
 
-                #div_timestamps = torch.randn(20).cuda()
-                #divergence = radiance_field.get_divergence(div_timestamps)
-
                 # compute loss
-                #div_targets = torch.zeros_like(divergence)
-                #loss_diverge = F.smooth_l1_loss(divergence, div_targets)
-                loss_pixels = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
-                #loss = loss_diverge + loss_pixels
-                loss = loss_pixels
+                loss = F.smooth_l1_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
 
                 optimizer.zero_grad()
-
                 # do not unscale it because we are using Adam.
                 grad_scaler.scale(loss).backward()
                 optimizer.step()
                 scheduler.step()
 
-                if step % 10 == 0:
+                if step % 5000 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
                         f"elapsed_time={elapsed_time:.2f}s | step={step} | "
                         f"loss={loss:.5f} | "
-                        #f"div_loss{loss_diverge:.5f} |"
                         f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                         f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                     )
@@ -273,7 +264,7 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
-        num_time = 100
+        num_time = 10
         timestamps = torch.tensor([[0.0]], dtype=torch.float32).to(device)
 
         for i in range(10):
@@ -285,9 +276,8 @@ if __name__ == "__main__":
             )
 
         with torch.no_grad():
-            for t in map(lambda x: 10.0 * x / num_time, range(num_time)):
-                #for i in range(len(test_dataset)):
-                for i in [3]:
+            for t in map(lambda x: x / num_time, range(num_time)):
+                for i in range(len(test_dataset)):
                     data = test_dataset[i]
                     render_bkgd = data["color_bkgd"]
                     rays = data["rays"]

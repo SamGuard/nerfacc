@@ -12,6 +12,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchdiffeq import odeint
 
 
 class MLP(nn.Module):
@@ -169,14 +170,14 @@ class NerfMLP(nn.Module):
 
 
 class ODEfunc(nn.Module):
-    def __init__(self, dim, width=64):
+    def __init__(self, input_dim, output_dim, width=64):
         super(ODEfunc, self).__init__()
         self.layers = nn.ModuleList()
         
-        self.layers.append(nn.Linear(dim, width))
+        self.layers.append(nn.Linear(input_dim, width))
         self.layers.append(nn.Linear(width, width))
         self.layers.append(nn.Linear(width, width))
-        self.layers.append(nn.Linear(width, dim))
+        self.layers.append(nn.Linear(width, output_dim))
 
         for l in self.layers:
             #nn.init.normal_(l.weight, mean=0, std=0.00001)
@@ -185,7 +186,7 @@ class ODEfunc(nn.Module):
         
 
     def forward(self, t, x):
-        #x = torch.cat((x, (torch.zeros_like(x) + t)), dim=1)
+        x = torch.cat((x, (torch.zeros_like(x) + t)), dim=1)
         for l in self.layers:
             x = F.tanh(l(x))
         return x
@@ -196,12 +197,11 @@ class ODEBlock(nn.Module):
         super(ODEBlock, self).__init__()
         self.odefunc = odefunc
 
-    def forward(self, steps: int, x: torch.Tensor, delta_t: float):
-        time_steps = torch.linspace(0, (steps-1) * delta_t, steps, dtype=x.dtype)
+    def forward(self, t: torch.Tensor, x: torch.Tensor):
         return odeint(
             self.odefunc,
             x,
-            time_steps,
+            t,
         ).transpose(0, 1)
 
 
@@ -331,15 +331,7 @@ class ZD_NeRFRadianceField(nn.Module):
         super().__init__()
         self.posi_encoder = SinusoidalEncoder(3, 0, 4, True)
         self.time_encoder = SinusoidalEncoder(1, 0, 4, True)
-        self.warp = ODEBlock(MLP(
-            input_dim=self.posi_encoder.latent_dim
-            + self.time_encoder.latent_dim,
-            output_dim=3,
-            net_depth=4,
-            net_width=64,
-            skip_layer=2,
-            output_init=functools.partial(torch.nn.init.uniform_, b=1e-4),
-        ))
+        self.warp = ODEBlock(ODEfunc(input_dim=4, output_dim=3, width=64))
         self.nerf = VanillaNeRFRadianceField()
 
     def query_opacity(self, x, timestamps, step_size):
@@ -352,14 +344,10 @@ class ZD_NeRFRadianceField(nn.Module):
         return opacity
 
     def query_density(self, x, t):
-        x = x + self.warp(
-            torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
-        )
+        x = self.warp(x, t)
         return self.nerf.query_density(x)
 
     def forward(self, x, t, condition=None):
-        x = x + self.warp(
-            torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
-        )
+        x = self.warp(x, t)
         return self.nerf(x, condition=condition)
     
