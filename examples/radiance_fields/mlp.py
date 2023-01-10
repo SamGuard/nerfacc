@@ -198,21 +198,6 @@ class ODEBlock(nn.Module):
         self.odefunc = odefunc
 
     def forward(self, t: torch.Tensor, x: torch.Tensor):
-        # Need to sort in order of time
-        time_steps = torch.sort(t)
-        args = torch.argsort(t)
-
-        # Morphed points
-        morphed = odeint(
-            self.odefunc,
-            x,
-            time_steps,
-        ).transpose(0, 1)
-
-        out = torch.zeros_like(x)
-
-        for m,o,i in zip(range(x.shape[0]), morphed, args):
-            
 
         """
         t = [2, 1]
@@ -240,6 +225,24 @@ class ODEBlock(nn.Module):
             [12, 16]
         ]
         """
+
+        # Need to sort in order of time
+        time_steps = torch.sort(t)
+        args = torch.argsort(t)
+
+        # Morphed points
+        morphed = odeint(
+            self.odefunc,
+            x,
+            time_steps,
+        ).transpose(0, 1)
+
+        out = torch.zeros_like(x)
+
+        for i,m,a in zip(range(x.shape[0]), morphed, args):
+            out[i] = m[a+1]
+        
+        return out
 
 
 class SinusoidalEncoder(nn.Module):
