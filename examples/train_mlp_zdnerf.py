@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 optimizer.step()
                 scheduler.step()
 
-                if step % 100 == 0:
+                if step % 1 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
@@ -196,7 +196,8 @@ if __name__ == "__main__":
                         f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                         f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                     )
-
+                    
+                if step % 100 == 0:
                     torch.save(
                         radiance_field.state_dict(),
                         os.path.join(
