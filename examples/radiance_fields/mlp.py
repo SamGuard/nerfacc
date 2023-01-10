@@ -168,6 +168,43 @@ class NerfMLP(nn.Module):
         return raw_rgb, raw_sigma
 
 
+class ODEfunc(nn.Module):
+    def __init__(self, dim, width=64):
+        super(ODEfunc, self).__init__()
+        self.layers = nn.ModuleList()
+        
+        self.layers.append(nn.Linear(dim, width))
+        self.layers.append(nn.Linear(width, width))
+        self.layers.append(nn.Linear(width, width))
+        self.layers.append(nn.Linear(width, dim))
+
+        for l in self.layers:
+            #nn.init.normal_(l.weight, mean=0, std=0.00001)
+            nn.init.constant_(l.weight, 0.001)
+            nn.init.constant_(l.bias, val=0)
+        
+
+    def forward(self, t, x):
+        #x = torch.cat((x, (torch.zeros_like(x) + t)), dim=1)
+        for l in self.layers:
+            x = F.tanh(l(x))
+        return x
+
+
+class ODEBlock(nn.Module):
+    def __init__(self, odefunc):
+        super(ODEBlock, self).__init__()
+        self.odefunc = odefunc
+
+    def forward(self, steps: int, x: torch.Tensor, delta_t: float):
+        time_steps = torch.linspace(0, (steps-1) * delta_t, steps, dtype=x.dtype)
+        return odeint(
+            self.odefunc,
+            x,
+            time_steps,
+        ).transpose(0, 1)
+
+
 class SinusoidalEncoder(nn.Module):
     """Sinusoidal Positional Encoder used in Nerf."""
 
@@ -280,6 +317,9 @@ class DNeRFRadianceField(nn.Module):
         return self.nerf.query_density(x)
 
     def forward(self, x, t, condition=None):
+        print("x", x.shape)
+        print("t", t.shape)
+        print("---")
         x = x + self.warp(
             torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
         )
@@ -291,7 +331,7 @@ class ZD_NeRFRadianceField(nn.Module):
         super().__init__()
         self.posi_encoder = SinusoidalEncoder(3, 0, 4, True)
         self.time_encoder = SinusoidalEncoder(1, 0, 4, True)
-        self.warp = MLP(
+        self.warp = ODEBlock(MLP(
             input_dim=self.posi_encoder.latent_dim
             + self.time_encoder.latent_dim,
             output_dim=3,
@@ -299,10 +339,8 @@ class ZD_NeRFRadianceField(nn.Module):
             net_width=64,
             skip_layer=2,
             output_init=functools.partial(torch.nn.init.uniform_, b=1e-4),
-        )
+        ))
         self.nerf = VanillaNeRFRadianceField()
-        self.zero_divergence = True
-        self.divergence_cache = {}
 
     def query_opacity(self, x, timestamps, step_size):
         idxs = torch.randint(0, len(timestamps), (x.shape[0],), device=x.device)
@@ -319,80 +357,9 @@ class ZD_NeRFRadianceField(nn.Module):
         )
         return self.nerf.query_density(x)
 
-    def genOffsets(self, dims: torch.tensor) -> torch.tensor:
-        offIter = product(range(-1, 2), repeat=len(dims))
-        offsets = []
-        for o in offIter:
-            offsets.append(o)
-
-        out = torch.tensor(offsets, dtype=torch.int64).cuda()
-        del offsets
-        del offIter
-        return out
-
-    def divField(self, vec: torch.tensor) -> torch.tensor:
-        dims = torch.tensor(vec.shape[:-1]).cuda()
-
-        offsets = self.genOffsets(dims)
-
-        paddedShape = tuple(map(lambda x: x + 2, vec.shape[:-1])) + (
-            vec.shape[-1],
-        )
-        canvas = torch.zeros(size=paddedShape).cuda()
-        out = torch.zeros_like(canvas)
-        for o in offsets:
-            canvas[:] = 0
-            start = o + 1
-            end = dims + o + 1
-
-            canvas[start[0] : end[0], start[1] : end[1], start[2] : end[2]] = (
-                vec * o
-            )
-            out += canvas
-        del canvas
-        del offsets
-        del dims
-        return torch.sum(torch.abs(out[1:-1, 1:-1, 1:-1]), dim=-1)
-
-    def clear_divergence_cache(self):
-        self.divergence_cache = {}
-
-    def get_divergence(
-        self,
-        timestamps,
-        min_pos=(-10.0, -10.0, -10.0),
-        max_pos=(10.0, 10.0, 10.0),
-        steps=10,
-    ):
-        out = torch.zeros_like(timestamps)
-        
-        for i, t in enumerate(timestamps):
-            xs = torch.linspace(min_pos[0], max_pos[0], steps=steps)
-            ys = torch.linspace(min_pos[1], max_pos[1], steps=steps)
-            zs = torch.linspace(min_pos[2], max_pos[2], steps=steps)
-            x, y, z = torch.meshgrid(xs, ys, zs, indexing="xy")
-            pos = self.posi_encoder(
-                torch.stack((x, y, z), dim=3).flatten(start_dim=0, end_dim=2).cuda()
-            )
-            tArray = self.time_encoder(
-                torch.zeros(size=(steps * steps * steps, 1)).cuda()
-            )
-            tArray[:] = t
-
-            vecs = self.warp(
-                torch.cat(
-                    (pos, tArray),
-                    dim=1,
-                )
-            ).reshape(shape=(steps, steps, steps, 3))
-            out[i] = torch.sum(self.divField(vecs))
-            del pos
-            del tArray
-            del vecs
-        return out
-
     def forward(self, x, t, condition=None):
         x = x + self.warp(
             torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
         )
         return self.nerf(x, condition=condition)
+    
