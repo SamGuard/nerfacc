@@ -317,8 +317,8 @@ class DNeRFRadianceField(nn.Module):
         return self.nerf.query_density(x)
 
     def forward(self, x, t, condition=None):
-        print("x", x.shape)
-        print("t", t.shape)
+        print("x", self.posi_encoder(x).shape)
+        print("t", self.time_encoder(t).shape)
         print("---")
         x = x + self.warp(
             torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
