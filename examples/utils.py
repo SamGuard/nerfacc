@@ -111,9 +111,10 @@ def render_image(
             chunk_results = [rgb, opacity, depth, len(t_starts)]
         else:
             print("Skip")
-            chunk_results = [torch.zeros(size=(8129,3),device="cuda:0"), 
-            torch.zeros(size=(8129,1),device="cuda:0"), 
-            torch.zeros(size=(8129,1),device="cuda:0"), 0
+            s = len(chunk_rays.origins)
+            chunk_results = [torch.zeros(size=(s,3),device="cuda:0"), 
+            torch.zeros(size=(s,1),device="cuda:0"), 
+            torch.zeros(size=(s,1),device="cuda:0"), 0
             ]
         results.append(chunk_results)
     colors, opacities, depths, n_rendering_samples = [
