@@ -85,6 +85,7 @@ def render_image(
         else test_chunk_size
     )
     for i in range(0, num_rays, chunk):
+        print("CHUNK")
         chunk_rays = namedtuple_map(lambda r: r[i : i + chunk], rays)
         packed_info, t_starts, t_ends = ray_marching(
             chunk_rays.origins,
