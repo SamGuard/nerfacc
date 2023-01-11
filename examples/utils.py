@@ -83,7 +83,7 @@ def render_image(
         if radiance_field.training
         else test_chunk_size
     )
-    print("rays", rays, chunk)
+    
     for i in range(0, num_rays, chunk):
         chunk_rays = namedtuple_map(lambda r: r[i : i + chunk], rays)
         packed_info, t_starts, t_ends = ray_marching(
@@ -100,6 +100,7 @@ def render_image(
             alpha_thre=alpha_thre,
         )
         if(t_starts.shape[0] > 0):
+            print("SHAPES", rgb.shape, opacity.shape, depth.shape)
             rgb, opacity, depth = rendering(
                 rgb_sigma_fn,
                 packed_info,
