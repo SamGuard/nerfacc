@@ -107,10 +107,13 @@ def render_image(
                 t_ends,
                 render_bkgd=render_bkgd,
             )
-            print("SHAPES", rgb.shape, opacity.shape, depth.shape)
+            print("SHAPES", rgb.shape, opacity.shape, depth.shape, len(t_starts))
             chunk_results = [rgb, opacity, depth, len(t_starts)]
         else:
-            chunk_results = [None, None, None, 0]
+            chunk_results = [torch.zeros(size=(8129,3),device="cuda:0"), 
+            torch.zeros(size=(8129,1),device="cuda:0"), 
+            torch.zeros(size=(8129,1),device="cuda:0"), 0
+            ]
         results.append(chunk_results)
     colors, opacities, depths, n_rendering_samples = [
         torch.cat(r, dim=0) if isinstance(r[0], torch.Tensor) else r
