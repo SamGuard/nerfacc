@@ -63,7 +63,6 @@ def render_image(
         return radiance_field.query_density(positions)
 
     def rgb_sigma_fn(t_starts, t_ends, ray_indices):
-        print(t_starts, t_ends, ray_indices)
         ray_indices = ray_indices.long()
         t_origins = chunk_rays.origins[ray_indices]
         t_dirs = chunk_rays.viewdirs[ray_indices]
@@ -99,7 +98,9 @@ def render_image(
             cone_angle=cone_angle,
             alpha_thre=alpha_thre,
         )
-
+        print(t_starts)
+        print(t_ends)
+        print(packed_info)
         rgb, opacity, depth = rendering(
             rgb_sigma_fn,
             packed_info,
