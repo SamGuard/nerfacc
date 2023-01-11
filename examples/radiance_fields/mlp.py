@@ -236,9 +236,7 @@ class ODEBlock(nn.Module):
             time_steps,
         )
 
-        r = torch.tensor(
-            torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
-        )
+        r = torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
 
         out = morphed[args,r]
 
