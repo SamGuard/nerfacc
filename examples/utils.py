@@ -63,6 +63,7 @@ def render_image(
         return radiance_field.query_density(positions)
 
     def rgb_sigma_fn(t_starts, t_ends, ray_indices):
+        print(t_starts, t_ends, ray_indices)
         ray_indices = ray_indices.long()
         t_origins = chunk_rays.origins[ray_indices]
         t_dirs = chunk_rays.viewdirs[ray_indices]
@@ -74,7 +75,6 @@ def render_image(
                 if radiance_field.training
                 else timestamps.expand_as(positions[:, :1])
             )
-            if(t.shape[0] == 0): print(t.transpose(1,0), t_dirs.transpose(1,0))
             return radiance_field(positions, t, t_dirs)
         return radiance_field(positions, t_dirs)
 
@@ -86,7 +86,6 @@ def render_image(
     )
     for i in range(0, num_rays, chunk):
         chunk_rays = namedtuple_map(lambda r: r[i : i + chunk], rays)
-        print("ray_marching")
         packed_info, t_starts, t_ends = ray_marching(
             chunk_rays.origins,
             chunk_rays.viewdirs,
@@ -100,7 +99,7 @@ def render_image(
             cone_angle=cone_angle,
             alpha_thre=alpha_thre,
         )
-        print("rendering")
+
         rgb, opacity, depth = rendering(
             rgb_sigma_fn,
             packed_info,
