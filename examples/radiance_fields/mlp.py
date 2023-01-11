@@ -200,32 +200,7 @@ class ODEBlock(nn.Module):
         self.odefunc = odefunc
 
     def forward(self, t: torch.Tensor, x: torch.Tensor):
-
-        """
-        t = [2, 1]
-        x = [
-            [1, 2]
-            [3, 4]
-        ]
-        time_steps = [1, 2]
-        args = [1, 0]
-        r = [0,1]
-        morphed = [
-            [
-                [-2, -4],
-                [ 4,  8]
-            ],
-            [
-                [-6, -8],
-                [12, 16]
-            ]
-         ]
-        out = [
-            [-2, -4],
-            [12, 16]
-        ]
-        """
-
+        print(t.shape, x.shape)
         # Need to sort in order of time
         time_steps, args = torch.unique(t, sorted=True, return_inverse=True)
 
@@ -235,6 +210,11 @@ class ODEBlock(nn.Module):
             x,
             time_steps,
         )
+        # Morphed points contains an array which is of the form:
+        # morphed[time_stamp][index]
+        # As this list is in order of time we need to convert it back to how the time steps were before sorting
+        # To this we index by the args array, which will give all points at a given time
+        # Then indexing by r gives the morphed point at the time given
 
         r = torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
 
