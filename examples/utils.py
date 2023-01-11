@@ -99,7 +99,7 @@ def render_image(
             cone_angle=cone_angle,
             alpha_thre=alpha_thre,
         )
-        if(t_starts > 0):
+        if(t_starts.shape[0] > 0):
             rgb, opacity, depth = rendering(
                 rgb_sigma_fn,
                 packed_info,
