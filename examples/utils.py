@@ -74,7 +74,7 @@ def render_image(
                 if radiance_field.training
                 else timestamps.expand_as(positions[:, :1])
             )
-            print(t.shape, t_dirs.shape)
+            if(t.shape[0] == 0): print(t, t_dirs)
             return radiance_field(positions, t, t_dirs)
         return radiance_field(positions, t_dirs)
 
