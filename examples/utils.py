@@ -110,6 +110,7 @@ def render_image(
             print("SHAPES", rgb.shape, opacity.shape, depth.shape, len(t_starts))
             chunk_results = [rgb, opacity, depth, len(t_starts)]
         else:
+            print("Skip")
             chunk_results = [torch.zeros(size=(8129,3),device="cuda:0"), 
             torch.zeros(size=(8129,1),device="cuda:0"), 
             torch.zeros(size=(8129,1),device="cuda:0"), 0
