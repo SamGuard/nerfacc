@@ -83,9 +83,9 @@ def render_image(
         if radiance_field.training
         else test_chunk_size
     )
+    print("rays", rays.shape, chunk)
     for i in range(0, num_rays, chunk):
         chunk_rays = namedtuple_map(lambda r: r[i : i + chunk], rays)
-        print(scene_aabb, occupancy_grid,near_plane,far_plane,render_step_size,cone_angle,alpha_thre)
         packed_info, t_starts, t_ends = ray_marching(
             chunk_rays.origins,
             chunk_rays.viewdirs,
@@ -99,15 +99,17 @@ def render_image(
             cone_angle=cone_angle,
             alpha_thre=alpha_thre,
         )
-
-        rgb, opacity, depth = rendering(
-            rgb_sigma_fn,
-            packed_info,
-            t_starts,
-            t_ends,
-            render_bkgd=render_bkgd,
-        )
-        chunk_results = [rgb, opacity, depth, len(t_starts)]
+        if(t_starts > 0):
+            rgb, opacity, depth = rendering(
+                rgb_sigma_fn,
+                packed_info,
+                t_starts,
+                t_ends,
+                render_bkgd=render_bkgd,
+            )
+            chunk_results = [rgb, opacity, depth, len(t_starts)]
+        else:
+            chunk_results = [None, None, None, 0]
         results.append(chunk_results)
     colors, opacities, depths, n_rendering_samples = [
         torch.cat(r, dim=0) if isinstance(r[0], torch.Tensor) else r
