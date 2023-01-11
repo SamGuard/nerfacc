@@ -100,7 +100,6 @@ def render_image(
             alpha_thre=alpha_thre,
         )
         if(t_starts.shape[0] > 0):
-            print("SHAPES", rgb.shape, opacity.shape, depth.shape)
             rgb, opacity, depth = rendering(
                 rgb_sigma_fn,
                 packed_info,
@@ -108,6 +107,7 @@ def render_image(
                 t_ends,
                 render_bkgd=render_bkgd,
             )
+            print("SHAPES", rgb.shape, opacity.shape, depth.shape)
             chunk_results = [rgb, opacity, depth, len(t_starts)]
         else:
             chunk_results = [None, None, None, 0]
