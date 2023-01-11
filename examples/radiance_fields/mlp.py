@@ -173,21 +173,22 @@ class ODEfunc(nn.Module):
     def __init__(self, input_dim, output_dim, width=32, depth=8):
         super(ODEfunc, self).__init__()
         self.layers = nn.ModuleList()
-        
+
         self.layers.append(nn.Linear(input_dim, width))
-        for i in range(depth-2):
+        for i in range(depth - 2):
             self.layers.append(nn.Linear(width, width))
         self.layers.append(nn.Linear(width, output_dim))
 
         for l in self.layers:
             nn.init.normal_(l.weight, mean=0, std=0.0001)
-            #nn.init.constant_(l.weight, 0.001)
+            # nn.init.constant_(l.weight, 0.001)
             nn.init.constant_(l.bias, val=0)
-        
 
     def forward(self, t, x):
-        x = torch.cat((x, torch.zeros(size=(x.shape[0], 1), device="cuda:0") + t), dim=1)
-        
+        x = torch.cat(
+            (x, torch.zeros(size=(x.shape[0], 1), device="cuda:0") + t), dim=1
+        )
+
         for l in self.layers:
             x = torch.tanh(l(x))
         return x
@@ -210,7 +211,7 @@ class ODEBlock(nn.Module):
         args = [1, 0]
         r = [0,1]
         morphed = [
-            [   
+            [
                 [-2, -4],
                 [ 4,  8]
             ],
@@ -233,13 +234,14 @@ class ODEBlock(nn.Module):
             self.odefunc,
             x,
             time_steps,
-        ).transpose(0, 1)
+        )
 
-        out = torch.zeros_like(x)
+        r = torch.tensor(
+            torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
+        )
 
-        for i,m,a in zip(range(x.shape[0]), morphed, args):
-            out[i] = m[a]
-        
+        out = morphed[args,r]
+
         return out
 
 
@@ -388,4 +390,3 @@ class ZD_NeRFRadianceField(nn.Module):
     def forward(self, x, t, condition=None):
         x = self.warp(t.flatten(), x)
         return self.nerf(x, condition=condition)
-    
