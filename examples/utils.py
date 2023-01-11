@@ -85,7 +85,7 @@ def render_image(
     )
     for i in range(0, num_rays, chunk):
         chunk_rays = namedtuple_map(lambda r: r[i : i + chunk], rays)
-        print(chunk_rays)
+        print(scene_aabb, occupancy_grid,near_plane,far_plane,render_step_size,cone_angle,alpha_thre)
         packed_info, t_starts, t_ends = ray_marching(
             chunk_rays.origins,
             chunk_rays.viewdirs,
