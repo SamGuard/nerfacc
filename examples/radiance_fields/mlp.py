@@ -218,7 +218,7 @@ class ODEBlock(nn.Module):
 
         out = morphed[args,r]
         print(x)
-        print(morphed[5])
+        print(morphed[22])
         print(r)
         print(t)
         print(args)
