@@ -214,11 +214,14 @@ class ODEBlock(nn.Module):
         # As this list is in order of time we need to convert it back to how the time steps were before sorting
         # To this we index by the args array, which will give all points at a given time
         # Then indexing by r gives the morphed point at the time given
-
         r = torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
 
         out = morphed[args,r]
-
+        print(morphed)
+        print(r)
+        print(args)
+        print(out)
+        print(0/0)
         return out
 
 
