@@ -220,6 +220,7 @@ class ODEBlock(nn.Module):
         print(x)
         print(morphed)
         print(r)
+        print(t)
         print(args)
         print(out)
         print(0/0)
