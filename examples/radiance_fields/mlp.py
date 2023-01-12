@@ -179,19 +179,19 @@ class ODEfunc(nn.Module):
             self.layers.append(nn.Linear(width, width))
         self.layers.append(nn.Linear(width, output_dim))
 
-        for l in self.layers:
+        """for l in self.layers:
             nn.init.normal_(l.weight, mean=0, std=0.0001)
             # nn.init.constant_(l.weight, 0.001)
-            nn.init.constant_(l.bias, val=0)
+            nn.init.constant_(l.bias, val=0)"""
 
     def forward(self, t, x):
         x = torch.cat(
             (x, torch.zeros(size=(x.shape[0], 1), device="cuda:0") + t), dim=1
         )
 
-        for l in self.layers:
+        for l in self.layers[:-1]:
             x = torch.tanh(l(x))
-        return x
+        return self.layers[-1](x)
 
 
 class ODEBlock(nn.Module):

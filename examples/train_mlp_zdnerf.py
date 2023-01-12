@@ -265,7 +265,7 @@ if __name__ == "__main__":
         radiance_field.to(device)
         radiance_field.eval()
         step = 0
-        num_time = 1
+        num_time = 10
         timestamps = torch.tensor([[0.0]], dtype=torch.float32).to(device)
 
         for i in range(10):
