@@ -142,7 +142,7 @@ if __name__ == "__main__":
                 render_bkgd = data["color_bkgd"]
                 rays = data["rays"]
                 pixels = data["pixels"]
-                timestamps = torch.zeros(size=(rays.shape[0],1), device="cuda:0") + data["timestamps"]
+                timestamps = torch.zeros(size=(pixels.shape[0],1), device="cuda:0") + data["timestamps"]
                 print("Training on index:", i)
                 print(timestamps[:10])
 
