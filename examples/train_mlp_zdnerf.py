@@ -106,7 +106,7 @@ if __name__ == "__main__":
         root_fp=data_root_fp,
         split=args.train_split,
         num_rays=target_sample_batch_size // render_n_samples,
-        #batch_over_images=False
+        batch_over_images=False
     )
     train_dataset.images = train_dataset.images.to(device)
     train_dataset.camtoworlds = train_dataset.camtoworlds.to(device)
@@ -144,7 +144,7 @@ if __name__ == "__main__":
                 pixels = data["pixels"]
                 timestamps = data["timestamps"]
                 print("Training on index:", i)
-                print(timestamps)
+                print(timestamps[:10])
 
                 # update occupancy grid
                 occupancy_grid.every_n_step(
