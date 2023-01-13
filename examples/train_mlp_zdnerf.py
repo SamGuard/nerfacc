@@ -137,14 +137,22 @@ if __name__ == "__main__":
         for epoch in range(10000000):
             for i in range(len(train_dataset)):
                 radiance_field.train()
-                data = train_dataset[i]
+                if(epoch < 100):
+                    data = train_dataset[0]
+                elif(epoch < 300):
+                    data = train_dataset[i%2]
+                elif(epoch < 600):
+                    data = train_dataset[i%3]
+                elif(epoch < 1000):
+                    data = train_dataset[i%4]
+                else:
+                    data = train_dataset[i]
 
                 render_bkgd = data["color_bkgd"]
                 rays = data["rays"]
                 pixels = data["pixels"]
                 timestamps = torch.zeros(size=(pixels.shape[0],1), device="cuda:0") + data["timestamps"]
-                print("Training on index:", i)
-                print(timestamps[:10])
+                #print(timestamps[:10])
 
                 # update occupancy grid
                 occupancy_grid.every_n_step(
