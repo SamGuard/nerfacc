@@ -191,7 +191,6 @@ class ODEfunc(nn.Module):
 
         for l in self.layers[:-1]:
             x = torch.tanh(l(x))
-        
         return self.layers[-1](x)
 
 
@@ -218,6 +217,7 @@ class ODEBlock(nn.Module):
         r = torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
 
         out = morphed[args,r]
+
         return out
 
 
