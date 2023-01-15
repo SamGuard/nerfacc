@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 import tqdm
 from datasets.dnerf_synthetic import SubjectLoader
-from radiance_fields.mlp import DNeRFRadianceField
+from radiance_fields.mlp import ZD_NeRFRadianceField
 from utils import render_image, set_random_seed
 
 from nerfacc import ContractionType, OccupancyGrid
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # setup the radiance field we want to train.
     max_steps = args.max_steps
     grad_scaler = torch.cuda.amp.GradScaler(1)
-    radiance_field = DNeRFRadianceField().to(device)
+    radiance_field = ZD_NeRFRadianceField().to(device)
     optimizer = torch.optim.Adam(radiance_field.parameters(), lr=5e-4)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer,
@@ -106,6 +106,7 @@ if __name__ == "__main__":
         root_fp=data_root_fp,
         split=args.train_split,
         num_rays=target_sample_batch_size // render_n_samples,
+        #batch_over_images=False
     )
     train_dataset.images = train_dataset.images.to(device)
     train_dataset.camtoworlds = train_dataset.camtoworlds.to(device)
@@ -141,7 +142,8 @@ if __name__ == "__main__":
                 render_bkgd = data["color_bkgd"]
                 rays = data["rays"]
                 pixels = data["pixels"]
-                timestamps = data["timestamps"]
+                timestamps = data["timestamps"] #torch.zeros(size=(pixels.shape[0],1), device="cuda:0") + data["timestamps"]
+                #print(timestamps[:10])
 
                 # update occupancy grid
                 occupancy_grid.every_n_step(
@@ -187,7 +189,7 @@ if __name__ == "__main__":
                 optimizer.step()
                 scheduler.step()
 
-                if step % 5000 == 0:
+                if step % 1 == 0:
                     elapsed_time = time.time() - tic
                     loss = F.mse_loss(rgb[alive_ray_mask], pixels[alive_ray_mask])
                     print(
@@ -196,11 +198,12 @@ if __name__ == "__main__":
                         f"alive_ray_mask={alive_ray_mask.long().sum():d} | "
                         f"n_rendering_samples={n_rendering_samples:d} | num_rays={len(pixels):d} |"
                     )
-
+                    
+                if step % 100 == 0:
                     torch.save(
                         radiance_field.state_dict(),
                         os.path.join(
-                            ".", "network_out", "dnerf_nerf_step" + str(step) + ".pt"
+                            ".", "network_out", "zdnerf_nerf_step" + str(step) + ".pt"
                         ),
                     )
 
@@ -257,7 +260,7 @@ if __name__ == "__main__":
 
                 step += 1
     else:
-        radiance_field = DNeRFRadianceField()
+        radiance_field = ZD_NeRFRadianceField()
         radiance_field.load_state_dict(
             torch.load(os.path.join(".", "network_out", args.model), device)
         )
@@ -277,13 +280,12 @@ if __name__ == "__main__":
 
         with torch.no_grad():
             for t in map(lambda x: x / num_time, range(num_time)):
-                for i in range(len(test_dataset)):
+                for i in [3]:#range(len(test_dataset)):
                     data = test_dataset[i]
                     render_bkgd = data["color_bkgd"]
                     rays = data["rays"]
                     pixels = data["pixels"]
                     timestamps[0][0] = t
-                    #print(timestamps)
 
                     occupancy_grid._update(
                         step=step,
@@ -325,7 +327,4 @@ if __name__ == "__main__":
                     )
                     print(f"Image at time={t}, render={i}")
 
-                    if i == 0:
-                        #print((rgb.cpu().numpy()))
-                        pass
                     step += 1

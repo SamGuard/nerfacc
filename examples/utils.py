@@ -83,6 +83,7 @@ def render_image(
         if radiance_field.training
         else test_chunk_size
     )
+    
     for i in range(0, num_rays, chunk):
         chunk_rays = namedtuple_map(lambda r: r[i : i + chunk], rays)
         packed_info, t_starts, t_ends = ray_marching(
@@ -90,7 +91,7 @@ def render_image(
             chunk_rays.viewdirs,
             scene_aabb=scene_aabb,
             grid=occupancy_grid,
-            sigma_fn=sigma_fn,
+            #sigma_fn=sigma_fn,
             near_plane=near_plane,
             far_plane=far_plane,
             render_step_size=render_step_size,
@@ -98,14 +99,23 @@ def render_image(
             cone_angle=cone_angle,
             alpha_thre=alpha_thre,
         )
-        rgb, opacity, depth = rendering(
-            rgb_sigma_fn,
-            packed_info,
-            t_starts,
-            t_ends,
-            render_bkgd=render_bkgd,
-        )
-        chunk_results = [rgb, opacity, depth, len(t_starts)]
+        if(t_starts.shape[0] > 0):
+            rgb, opacity, depth = rendering(
+                rgb_sigma_fn,
+                packed_info,
+                t_starts,
+                t_ends,
+                render_bkgd=render_bkgd,
+            )
+            #print("SHAPES", rgb.shape, opacity.shape, depth.shape, len(t_starts))
+            chunk_results = [rgb, opacity, depth, len(t_starts)]
+        else:
+            #print("Skip")
+            s = len(chunk_rays.origins)
+            chunk_results = [torch.zeros(size=(s,3),device="cuda:0"), 
+            torch.zeros(size=(s,1),device="cuda:0"), 
+            torch.zeros(size=(s,1),device="cuda:0"), 0
+            ]
         results.append(chunk_results)
     colors, opacities, depths, n_rendering_samples = [
         torch.cat(r, dim=0) if isinstance(r[0], torch.Tensor) else r

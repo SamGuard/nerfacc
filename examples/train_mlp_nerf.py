@@ -71,10 +71,13 @@ if __name__ == "__main__":
         help="Bool, whether to train or not, just render",
         type=lambda x: x.lower() == "true",
     )
+    parser.add_argument("--samples", default="1024", help="Number of samples", type=int)
     parser.add_argument("--cone_angle", type=float, default=0.0)
+    parser.add_argument("--max_steps", type=int, default=50000)
+    parser.add_argument("--model", type=str, default="")
     args = parser.parse_args()
 
-    render_n_samples = 1024
+    render_n_samples = args.samples
 
     # setup the scene bounding box.
     if args.unbounded:
@@ -95,7 +98,7 @@ if __name__ == "__main__":
         ).item()
 
     # setup the radiance field we want to train.
-    max_steps = 50000
+    max_steps = args.max_steps
     grad_scaler = torch.cuda.amp.GradScaler(1)
     radiance_field = VanillaNeRFRadianceField().to(device)
     optimizer = torch.optim.Adam(radiance_field.parameters(), lr=5e-4)
@@ -232,6 +235,7 @@ if __name__ == "__main__":
 
                     psnrs = []
                     with torch.no_grad():
+                        print("Writing images to file...")
                         for i in tqdm.tqdm(range(len(test_dataset))):
                             data = test_dataset[i]
                             render_bkgd = data["color_bkgd"]
@@ -257,17 +261,19 @@ if __name__ == "__main__":
                             psnr = -10.0 * torch.log(mse) / np.log(10.0)
                             psnrs.append(psnr.item())
                             # imageio.imwrite(
-                            #     "acc_binary_test.png",
-                            #     ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
+                            #    "acc_binary_test.png",
+                            #    ((acc > 0).float().cpu().numpy() * 255).astype(np.uint8),
                             # )
-                            # imageio.imwrite(
-                            #     "rgb_test.png",
-                            #     (rgb.cpu().numpy() * 255).astype(np.uint8),
-                            # )
-                            # break
+                            print("Writing image to file...")
+                            imageio.imwrite(
+                                os.path.join(".", "render_out", f"rgb_{i}.png"),
+                                (rgb.cpu().numpy() * 255).astype(np.uint8),
+                            )
+
                     psnr_avg = sum(psnrs) / len(psnrs)
                     print(f"evaluation: psnr_avg={psnr_avg}")
                     train_dataset.training = True
+                    break
 
                 if step == max_steps:
                     print("training stops")
@@ -277,29 +283,54 @@ if __name__ == "__main__":
 
     else:
         # Load model
+        radiance_field = VanillaNeRFRadianceField()
         radiance_field.load_state_dict(
-            torch.load(
-                os.path.join(".", "network_out", "vanilla_nerf_step50000.pt"), device
-            )
+            torch.load(os.path.join(".", "network_out", args.model), device)
         )
+        radiance_field.to(device)
         radiance_field.eval()
-        for i in range(len(test_dataset)):
-            data = test_dataset[i]
-            rays = data["rays"]
-            render_bkgd = data["color_bkgd"]
-            rgb, acc, depth, n_rendering_samples = render_image(
-                radiance_field,
-                occupancy_grid,
-                rays,
-                scene_aabb,
-                # rendering options
-                near_plane=near_plane,
-                far_plane=far_plane,
-                render_step_size=render_step_size,
-                render_bkgd=render_bkgd,
-                cone_angle=args.cone_angle,
-            )
-            imageio.imwrite(
-                os.path.join(".", "render_out", f"rgb_{i}.png"),
-                (rgb.cpu().numpy() * 255).astype(np.uint8),
-            )
+        step = 0
+        occupancy_grid._update(
+            step=step,
+            occ_eval_fn=lambda x: radiance_field.query_opacity(x, render_step_size),
+        )
+
+        with torch.no_grad():
+            for i in range(len(test_dataset)):
+                data = test_dataset[i]
+                render_bkgd = data["color_bkgd"]
+                rays = data["rays"]
+                pixels = data["pixels"]
+                print(f"Rendering Image {i}")
+
+                occupancy_grid.every_n_step(
+                    step=step,
+                    occ_eval_fn=lambda x: radiance_field.query_opacity(
+                        x, render_step_size
+                    ),
+                )
+
+                # rendering
+                rgb, acc, depth, _ = render_image(
+                    radiance_field,
+                    occupancy_grid,
+                    rays,
+                    scene_aabb,
+                    # rendering options
+                    near_plane=None,
+                    far_plane=None,
+                    render_step_size=render_step_size,
+                    render_bkgd=render_bkgd,
+                    cone_angle=args.cone_angle,
+                    # test options
+                    test_chunk_size=args.test_chunk_size,
+                )
+
+                imageio.imwrite(
+                    os.path.join(".", "render_out", f"rgb_{i}.png"),
+                    (rgb.cpu().numpy() * 255).astype(np.uint8),
+                )
+
+                if i == 0:
+                    pass
+                    #print((rgb.cpu().numpy()))

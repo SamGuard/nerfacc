@@ -4,11 +4,15 @@ Copyright (c) 2022 Ruilong Li, UC Berkeley.
 
 import functools
 import math
+from itertools import product
+
 from typing import Callable, Optional
+import time
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchdiffeq import odeint_adjoint as odeint
 
 
 class MLP(nn.Module):
@@ -165,6 +169,58 @@ class NerfMLP(nn.Module):
         return raw_rgb, raw_sigma
 
 
+class ODEfunc(nn.Module):
+    def __init__(self, input_dim, output_dim, width=32, depth=8):
+        super(ODEfunc, self).__init__()
+        self.layers = nn.ModuleList()
+
+        self.layers.append(nn.Linear(input_dim, width))
+        for i in range(depth - 2):
+            self.layers.append(nn.Linear(width, width))
+        self.layers.append(nn.Linear(width, output_dim))
+
+        """for l in self.layers:
+            nn.init.normal_(l.weight, mean=0, std=0.0001)
+            # nn.init.constant_(l.weight, 0.001)
+            nn.init.constant_(l.bias, val=0)"""
+
+    def forward(self, t, x):
+        x = torch.cat(
+            (x, torch.zeros(size=(x.shape[0], 1), device="cuda:0") + t), dim=1
+        )
+
+        for l in self.layers[:-1]:
+            x = torch.tanh(l(x))
+        return self.layers[-1](x)
+
+
+class ODEBlock(nn.Module):
+    def __init__(self, odefunc):
+        super(ODEBlock, self).__init__()
+        self.odefunc = odefunc
+
+    def forward(self, t: torch.Tensor, x: torch.Tensor):
+        # Need to sort in order of time
+        time_steps, args = torch.unique(t, sorted=True, return_inverse=True)
+
+        # Morphed points
+        morphed = odeint(
+            self.odefunc,
+            x,
+            time_steps,
+        )
+        # Morphed points contains an array which is of the form:
+        # morphed[time_stamp][index]
+        # As this list is in order of time we need to convert it back to how the time steps were before sorting
+        # To this we index by the args array, which will give all points at a given time
+        # Then indexing by r gives the morphed point at the time given
+        r = torch.linspace(0, x.shape[0] - 1, x.shape[0], dtype=torch.long)
+
+        out = morphed[args,r]
+
+        return out
+
+
 class SinusoidalEncoder(nn.Module):
     """Sinusoidal Positional Encoder used in Nerf."""
 
@@ -277,7 +333,36 @@ class DNeRFRadianceField(nn.Module):
         return self.nerf.query_density(x)
 
     def forward(self, x, t, condition=None):
+        print("x", self.posi_encoder(x).shape)
+        print("t", self.time_encoder(t).shape)
+        print("---")
         x = x + self.warp(
             torch.cat([self.posi_encoder(x), self.time_encoder(t)], dim=-1)
         )
+        return self.nerf(x, condition=condition)
+
+
+class ZD_NeRFRadianceField(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.posi_encoder = SinusoidalEncoder(3, 0, 4, True)
+        self.time_encoder = SinusoidalEncoder(1, 0, 4, True)
+        self.warp = ODEBlock(ODEfunc(input_dim=4, output_dim=3, width=64))
+        self.nerf = VanillaNeRFRadianceField()
+
+    def query_opacity(self, x, timestamps, step_size):
+        idxs = torch.randint(0, len(timestamps), (x.shape[0],), device=x.device)
+        t = timestamps[idxs]
+        density = self.query_density(x, t)
+        # if the density is small enough those two are the same.
+        # opacity = 1.0 - torch.exp(-density * step_size)
+        opacity = density * step_size
+        return opacity
+
+    def query_density(self, x, t):
+        x = self.warp(t.flatten(), x)
+        return self.nerf.query_density(x)
+
+    def forward(self, x, t, condition=None):
+        x = self.warp(t.flatten(), x)
         return self.nerf(x, condition=condition)
